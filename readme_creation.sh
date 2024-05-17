@@ -13,3 +13,6 @@ echo "Additional scripts for miscellaneous tasks" > ./helper_scripts/README.txt
 echo "General utility functions used across the project" > ./utilities/README.txt
 echo "Jupyter Notebooks" > ./notebooks/README.txt
 echo "Any media files" > ./media/README.txt
+echo "All Airflow DAGs files" > ./dags/README.txt
+echo "Log files" > ./logs/README.txt
+echo "All tests and unit test" > ./tests/README.txt
