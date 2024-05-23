@@ -2,10 +2,12 @@
   "version": 1,
   "formatters": {
     "simple": {
-      "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+      "datefmt": "%m-%d-%Y %H:%M:%S"
     },
     "detailed": {
-      "format": "%(asctime)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s"
+      "format": "%(asctime)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s",
+      "datefmt": "%m-%d-%Y %H:%M:%S"
     }
   },
   "handlers": {
@@ -24,12 +26,12 @@
   "loggers": {
     "test_logger": {
       "level": "DEBUG",
-      "handlers": ["file_handler", "console_handler"],
+      "handlers": ["main_handler", "console_handler"],
       "propagate": false
     },
     "main_logger": {
       "level": "DEBUG",
-      "handlers": ["file_handler"],
+      "handlers": ["main_handler"],
       "propagate": true
     }
   },
