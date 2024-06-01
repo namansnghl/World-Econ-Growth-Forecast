@@ -1,54 +1,56 @@
+import os
 import pandas as pd
-import numpy as np
+from utilities.logger import setup_logging
 
-def import_data(file_path):
-    """Function to import data from a file"""
-    df = pd.read_excel(file_path)
-    return df
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def drop_columns(df):
-    """Function to drop irrelevant columns"""
-    df.drop(columns=['WEO Subject Code','Country/Series-specific Notes','Estimates Start After'], inplace=True)
-    return df
+# Initialize logger
+file_path = os.path.join(PROJECT_DIR, 'utilities', 'log_config.json')
+my_logger = setup_logging(file_path)
+my_logger.set_logger("main_logger")
 
-def combine_columns(df):
-    """Function to combine relevant columns into a new 'Subject' column"""
-    df['Subject'] = df.apply(lambda row: f"{row['Subject Descriptor']} - {row['Units']} ({row['Scale']})", axis=1)
-    df.drop(columns=['Subject Descriptor','Units','Scale'], inplace=True)
-    return df
+def transform_data(pickle_path):
+    """Function to transform data and save it"""
 
-def convert_null_values(df):
-    """Function to convert specific values to NaN and then convert numeric columns to numeric"""
-    df.replace(["--", "na", ""], np.nan, inplace=True)
-    numeric_columns = df.select_dtypes(include=[np.number]).columns
-    df[numeric_columns] = df[numeric_columns].apply(pd.to_numeric)
-    return df
+    my_logger.write('info', f"Starting to transform data from {pickle_path}")
+
+    # Load data from pickle file
+    try:
+        df = pd.read_pickle(pickle_path)
+        my_logger.write('info', "Data successfully loaded from the pickle file.")
+    except FileNotFoundError:
+        my_logger.write('error', "The input pickle file does not exist.")
+        raise FileNotFoundError("The input pickle file does not exist.")
+    except Exception as e:
+        my_logger.write('error', f"Failed to load data from pickle file: {e}")
+        raise
+    
+     # Perform data transforming steps
+    df = melt_dataframe(df)
+    df = pivot_dataframe(df)
+
+    # Save transformed data
+    transformed_pickle_path = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'transformed_data.pkl')
+    try:
+        df.to_pickle(transformed_pickle_path)
+        my_logger.write('info', f"Transformed data successfully saved as a pickle file at {transformed_pickle_path}.")
+
+        # Save as Excel file
+        transformed_excel_path = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'transformed.xlsx')
+        df.to_excel(transformed_excel_path, index=False)
+        my_logger.write('info', f"Transformed data successfully saved as an Excel file at {transformed_excel_path}.")
+    except Exception as e:
+        my_logger.write('error', f"Failed to save transformed data: {e}")
+        raise
+
+    return transformed_excel_path
 
 def melt_dataframe(df):
-    """Function to melt the DataFrame"""
-    df_melted = pd.melt(df, id_vars=['WEO Country Code', 'Country', 'Subject'], var_name='Year', value_name='Value')
-    return df_melted
-
+        """Function to melt the DataFrame"""
+        df_melted = pd.melt(df, id_vars=['WEO Country Code', 'Country', 'Subject'], var_name='Year', value_name='Value')
+        return df_melted
+   
 def pivot_dataframe(df):
-    """Function to pivot the melted DataFrame"""
-    df_pivot = df.pivot_table(index=['WEO Country Code', 'Country', 'Year'], columns='Subject', values='Value').reset_index()
-    return df_pivot
-
-def save_to_file(df, file_path):
-    """Function to save the DataFrame to a file"""
-    df.to_excel(file_path, index=False)
-
-def process_file(input_file_path, output_file_path):
-    """Function to process the file and save the transformed data"""
-    df = import_data(input_file_path)
-    df = drop_columns(df)
-    df = combine_columns(df)
-    df = convert_null_values(df)
-    df_melted = melt_dataframe(df)
-    df_pivot = pivot_dataframe(df_melted)
-    save_to_file(df_pivot, output_file_path)
-
-# Usage example
-input_file_path = 'data/raw_data/IMF_WEO_Data.xlsx'
-output_file_path = 'data/processed_data/Transformed.xlsx'
-process_file(input_file_path, output_file_path)
+        """Function to pivot the melted DataFrame"""
+        df_pivot = df.pivot_table(index=['WEO Country Code', 'Country', 'Year'], columns='Subject', values='Value').reset_index()
+        return df_pivot
