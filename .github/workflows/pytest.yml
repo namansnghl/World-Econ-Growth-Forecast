@@ -1,4 +1,5 @@
 name: Pytest
+
 on:
   push:
     branches:
@@ -14,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -25,12 +26,14 @@ jobs:
       run: pip install -r requirements.txt
 
     - name: Run tests and generate XML report
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
       run: pytest --junitxml=pytest-report.xml
       continue-on-error: false
 
     - name: Upload test results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pytest-results
         path: pytest-report.xml
