@@ -1,6 +1,6 @@
 import os
 import pytest
-from src.data_loader import import_data
+from data_loader import import_data
 
 # Determine the absolute path of the project directory
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

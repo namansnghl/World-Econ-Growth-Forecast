@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import pytest
-from src.data_cleaner import process_data
+from data_cleaner import process_data
 
 # Determine the absolute path of the project directory
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

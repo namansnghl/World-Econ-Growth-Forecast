@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import pytest
-from src.transform import transform_data, melt_dataframe, pivot_dataframe
+from transform import transform_data, melt_dataframe, pivot_dataframe
 
 # Determine the absolute path of the project directory
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
