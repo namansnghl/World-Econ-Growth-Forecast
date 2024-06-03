@@ -131,6 +131,8 @@ dvc add <file-path>
 
 3. **DVC (Data Version Control)**: For managing datasets and machine learning models versioning, ensuring reproducibility and efficient data handling. DVC allows us to track data and model versions, making it easy to reproduce results and collaborate on data-intensive tasks without version conflicts. It is configured with `GCP`
 
+    <img src="assets/dvc-gcp.png" alt="airflow" width="800" height="400">
+
 4. **PyTest**: For writing and running unit tests to ensure code quality and functionality of individual components.
 
 5. **GitHub Actions**: To automate workflows for continuous integration and continuous deployment (CI/CD), including running tests, building Docker images, and deploying models.
