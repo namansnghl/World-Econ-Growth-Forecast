@@ -1,0 +1,5 @@
+outs:
+- md5: d916b843553f8bc5a149bc83456e2248
+  size: 4684011
+  hash: md5
+  path: raw_data.pkl
