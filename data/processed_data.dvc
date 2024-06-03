@@ -1,6 +1,0 @@
-outs:
-- md5: 07dbc215ca1ed433cc18ca4ccd5688a8.dir
-  size: 14690255
-  nfiles: 6
-  hash: md5
-  path: processed_data
