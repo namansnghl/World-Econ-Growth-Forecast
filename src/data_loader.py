@@ -13,9 +13,6 @@ DEFAULT_PICKLE_PATH = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'raw_d
 
 # Initialize logger
 file_path = os.path.join(PROJECT_DIR, 'utilities', 'log_config.json')
-if not os.path.exists(file_path):
-    file_path = os.path.join(PROJECT_DIR, 'utilities', 'log_config.json')
-
 my_logger = setup_logging(file_path)
 my_logger.set_logger("main_logger")
 

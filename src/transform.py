@@ -43,7 +43,7 @@ def transform_data(pickle_path):
         my_logger.write('error', f"Failed to save transformed data: {e}")
         raise
 
-    return transformed_excel_path
+    return transformed_pickle_path
 
 def melt_dataframe(df):
         """Function to melt the DataFrame"""
