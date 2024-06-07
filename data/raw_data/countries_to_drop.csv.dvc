@@ -1,0 +1,5 @@
+outs:
+- md5: 36b16aeb184ec2880c9e0910ed7e8b5d
+  size: 361
+  hash: md5
+  path: countries_to_drop.csv

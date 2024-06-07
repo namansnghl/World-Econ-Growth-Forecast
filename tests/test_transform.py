@@ -50,7 +50,6 @@ def test_transform_data():
     
     # Remove the output files after the test
     os.remove(output_excel_path)
-    os.remove(transformed_pickle_path)
 
 def test_melt_dataframe():
     """

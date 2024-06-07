@@ -1,0 +1,5 @@
+outs:
+- md5: 9192a7625bfba4d0057ad48c48e4dd45
+  size: 1306033
+  hash: md5
+  path: filtered_data.xlsx
