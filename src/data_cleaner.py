@@ -3,12 +3,9 @@ import pandas as pd
 import numpy as np
 from utilities.logger import setup_logging
 
-# Determine the absolute path of the project directory
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+PROJECT_DIR = os.environ.get("PROJECT_DIR")
 # Initialize logger
-file_path = os.path.join(PROJECT_DIR, 'utilities', 'log_config.json')
-my_logger = setup_logging(file_path)
+my_logger = setup_logging()
 my_logger.set_logger("main_logger")
 
 def process_data(pickle_path):
@@ -28,7 +25,7 @@ def process_data(pickle_path):
     df = convert_null_values(df)
     
     # Save processed data as pickle file
-    output_pickle_path = os.path.join(PROJECT_DIR, 'data/processed_data', 'processed_data.pkl')
+    output_pickle_path = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'processed_data.pkl')
     df.to_pickle(output_pickle_path)
     
     my_logger.write('info', f"Data processing completed. Processed data saved at {output_pickle_path}")

@@ -2,11 +2,9 @@ import os
 import pandas as pd
 from utilities.logger import setup_logging
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+PROJECT_DIR = os.environ.get("PROJECT_DIR")
 # Initialize logger
-file_path = os.path.join(PROJECT_DIR, 'utilities', 'log_config.json')
-my_logger = setup_logging(file_path)
+my_logger = setup_logging()
 my_logger.set_logger("main_logger")
 
 def transform_data(pickle_path):
