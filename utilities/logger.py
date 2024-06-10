@@ -1,10 +1,15 @@
 import logging
 import logging.config
 import json, os
+file_path = "./log_config.json"
+if not os.path.exists(file_path):
+        file_path = "./utilities/log_config.json"
 
 class setup_logging:
-    def __init__(self, file: str) -> None:
-        self.config_file = file
+    global file_path
+    
+    def __init__(self, file: str = None) -> None:
+        self.config_file = file or file_path
         self.logger = None
         self._load_config()
 
@@ -40,10 +45,6 @@ class setup_logging:
 
 
 if __name__ == "__main__":
-    file_path = "./log_config.json"
-    if not os.path.exists(file_path):
-        file_path = "./utilities/log_config.json"
-
     my_logger = setup_logging(file_path)
     my_logger.set_logger("test_logger")
     my_logger.write('debug', 'Debug message')
