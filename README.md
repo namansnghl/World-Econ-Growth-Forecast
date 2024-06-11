@@ -129,17 +129,17 @@ dvc add <file-path>
 
 2. **Jupyter Notebook**:  We have used it to experiment with different data cleaning and feature engineering techniques, as well as to visualize initial model results.
 
-3. **DVC (Data Version Control)**: For managing datasets and machine learning models versioning, ensuring reproducibility and efficient data handling. DVC allows us to track data and model versions, making it easy to reproduce results and collaborate on data-intensive tasks without version conflicts. It is configured with `GCP`
+3. **DVC (Data Version Control)**: For managing datasets and machine learning models versioning, ensuring reproducibility and efficient data handling. DVC allows us to track data and model versions, making it easy to reproduce results and collaborate on data-intensive tasks without version conflicts. It is configured with `GCP`. `.dvc` files are stored in Git which is the hashed version of the file in the cloud
 
-    <img src="assets/dvc-gcp.png" alt="airflow" width="800" height="400">
+    <img src="assets/DVC_in_GCP.png" alt="airflow" width="800" height="400">
 
 4. **PyTest**: For writing and running unit tests to ensure code quality and functionality of individual components.
 
 5. **GitHub Actions**: To automate workflows for continuous integration and continuous deployment (CI/CD), including running tests, building Docker images, and deploying models.
 
-6. **Docker**: Containerizes applications and their dependencies, ensuring consistency across different environments and simplifying deployment.
+6. **Docker**: Containerizes applications and their dependencies, ensuring consistency across different environments and simplifying deployment.`Dockerfile` is hosted on project root.
 
-7. **Airflow**: It manages the entire data pipeline, scheduling and monitoring tasks to ensure timely and reliable execution of the data processing and model training workflows.
+7. **Airflow**: It manages the entire data pipeline, scheduling and monitoring tasks to ensure timely and reliable execution of the data processing and model training workflows. 
 
 
     <img src="assets/airflow_dag.png" alt="airflow" width="800" height="400">
