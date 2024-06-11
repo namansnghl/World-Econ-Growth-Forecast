@@ -1,8 +1,11 @@
-import os
+import os, sys
 import pandas as pd
 import pytest
-from filter_data import filter_data
-from utilities.logger import setup_logging
+
+# Determine the absolute path of the project directory
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_DIR)
+from src.filter_data import filter_data
 
 # Define the project directory
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

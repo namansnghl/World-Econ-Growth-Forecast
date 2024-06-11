@@ -1,7 +1,11 @@
-import os
+import os, sys
 import pandas as pd
 import pytest
-from transform import melt_dataframe, transform_data
+
+# Determine the absolute path of the project directory
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_DIR)
+from src.transform import melt_dataframe, transform_data
 
 # Determine the absolute path of the project directory
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
