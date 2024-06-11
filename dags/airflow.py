@@ -1,28 +1,36 @@
 """
-The Airflow Dags for data pipeline
+The Airflow DAGs for data pipeline
 """
-import os, sys
+import os
+import sys
 from airflow import DAG
 from datetime import datetime, timedelta
 from airflow.operators.python import PythonOperator
-from airflow import configuration
+from airflow.configuration import conf
 
-# Determine the absolute path of the project directory
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Add the src and utilities directories to sys.path
+SRC_DIR = '/opt/airflow/src'
+UTILITIES_DIR = '/opt/airflow/utilities'
+if SRC_DIR not in sys.path:
+    sys.path.append(SRC_DIR)
+if UTILITIES_DIR not in sys.path:
+    sys.path.append(UTILITIES_DIR)
 
-# Add the parent directory to sys.path
-sys.path.append(PROJECT_DIR)
-os.environ["PROJECT_DIR"] = PROJECT_DIR
-from src.data_cleaner import process_data
-from src.data_loader import import_data
-from src.transform import transform_data
+# Import necessary modules from your project
+from data_cleaner import process_data
+from data_loader import import_data
+from transform import transform_data
+from filter_data import filter_data
 
-DEFAULT_EXCEL_PATH = os.path.join('data', 'raw_data', 'IMF_WEO_Data.xlsx')
-DEFAULT_PICKLE_PATH = os.path.join('data', 'processed_data', 'raw_data.pkl')
+# Define default paths
+PROJECT_DIR = '/opt/airflow'  # Use the mounted volume path
+DEFAULT_EXCEL_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'IMF_WEO_Data.xlsx')
+DEFAULT_PICKLE_PATH = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'raw_data.pkl')
+DEFAULT_COUNTRIES_TO_DROP_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'countries_to_drop.csv')
 
 # Set Airflow configuration to enable XCom pickling
-configuration.set('core', 'enable_xcom_pickling', 'True')
- 
+conf.set('core', 'enable_xcom_pickling', 'True')
+
 # Define default arguments for the DAG
 data_load_args = {
     'owner': 'manvithby',
@@ -38,7 +46,6 @@ with DAG(
     description='DAGs for Data Pipeline',
     schedule_interval=None,  # Set to None for manual triggering
     catchup=False  # Don't backfill past dates
-
 ) as dag:
     
     # Task to load data
@@ -62,8 +69,15 @@ with DAG(
         op_kwargs={'pickle_path': '{{ ti.xcom_pull(task_ids="Basic_Cleaning") }}'}
     )
     
+    # Task to transform data
+    filter_dataset = PythonOperator(
+        task_id='filter_dataset',
+        python_callable=filter_data,
+        op_kwargs={'pickle_path': '{{ ti.xcom_pull(task_ids="transform_dataset") }}', 'countries_to_drop_path':DEFAULT_COUNTRIES_TO_DROP_PATH},
+        provide_context=True
+    )
     # Define task dependencies
-    extract_data >> clean_data >> transform_dataset
+    extract_data >> clean_data >> transform_dataset >> filter_dataset
 
     # Optional: CLI access to the DAG
     if __name__ == "__main__":

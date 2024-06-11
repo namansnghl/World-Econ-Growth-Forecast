@@ -1,10 +1,9 @@
 import os
-import pandas as pd
 import numpy as np
-from utilities.logger import setup_logging
+import pandas as pd
 
-PROJECT_DIR = os.environ.get("PROJECT_DIR")
-# Initialize logger
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from utilities.logger import setup_logging
 my_logger = setup_logging()
 my_logger.set_logger("main_logger")
 

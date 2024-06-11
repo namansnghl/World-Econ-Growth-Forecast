@@ -1,20 +1,15 @@
 import os
+import sys
 import pandas as pd
 
-# Determine the absolute path of the project directory
-PROJECT_DIR = os.environ.get("PROJECT_DIR")
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# sys.path.append(PROJECT_DIR)
+sys.path.append(PROJECT_DIR)
 from utilities.logger import setup_logging
-
-DEFAULT_EXCEL_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'IMF_WEO_Data.xlsx')
-DEFAULT_PICKLE_PATH = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'raw_data.pkl')
-
-# Initialize logger
 my_logger = setup_logging()
 my_logger.set_logger("main_logger")
 
-def import_data(excel_path = DEFAULT_EXCEL_PATH, pickle_path = DEFAULT_PICKLE_PATH):
+def import_data(excel_path, pickle_path):
     """Function to import data from an Excel file and save it as a .pkl file."""
     my_logger.write('info', f"Starting to import data from {excel_path}")
     
