@@ -28,7 +28,7 @@ data_load_args = {
     'owner': 'manvithby',
     'start_date': datetime(2024, 5, 31, 18),
     'retries': 5,
-    'retry_delay': timedelta(minutes=1)
+    'retry_delay': timedelta(minutes=5)
 }
 
 # Define the DAG
@@ -42,8 +42,8 @@ with DAG(
 ) as dag:
     
     # Task to load data
-    load_data = PythonOperator(
-        task_id='Load_Data',
+    extract_data = PythonOperator(
+        task_id='Extract_Data',
         python_callable=import_data,
         op_kwargs={'excel_path': DEFAULT_EXCEL_PATH, 'pickle_path': DEFAULT_PICKLE_PATH}
     )
@@ -52,7 +52,7 @@ with DAG(
     clean_data = PythonOperator(
         task_id='Basic_Cleaning',
         python_callable=process_data,
-        op_kwargs={'pickle_path': '{{ ti.xcom_pull(task_ids="Load_Data") }}'}
+        op_kwargs={'pickle_path': '{{ ti.xcom_pull(task_ids="Extract_Data") }}'}
     )
 
     # Task to transform data
@@ -63,35 +63,7 @@ with DAG(
     )
     
     # Define task dependencies
-    load_data >> clean_data >> transform_dataset
-
-    # Optional: CLI access to the DAG
-    if __name__ == "__main__":
-        dag.cli()
-
-# Define default arguments for the DAG
-clean_data_args = {
-    'owner': 'namansnghl',
-    'start_date': datetime(2024, 5, 31, 18),
-    'retries': 5,
-    'retry_delay': timedelta(minutes=1)
-}
-
-# Define the DAG
-with DAG(
-    dag_id='Data_Cleaning',
-    default_args=clean_data_args,
-    description='DAG for Data cleaning',
-    schedule_interval=None,  # Set to None for manual triggering
-    catchup=False  # Don't backfill past dates
-
-) as dag:
-    
-    # Task to load data
-    
-    
-    # Define task dependencies
-    
+    extract_data >> clean_data >> transform_dataset
 
     # Optional: CLI access to the DAG
     if __name__ == "__main__":
