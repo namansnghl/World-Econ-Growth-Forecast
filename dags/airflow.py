@@ -13,7 +13,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Add the parent directory to sys.path
 sys.path.append(PROJECT_DIR)
 os.environ["PROJECT_DIR"] = PROJECT_DIR
-from src.data_cleaner import *
+from src.data_cleaner import process_data
 from src.data_loader import import_data
 from src.transform import transform_data
 
