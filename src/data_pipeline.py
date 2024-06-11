@@ -1,13 +1,15 @@
-"""
-Data Pipeline
-"""
-import os
+import os, sys
+# Add the src and utilities directories to sys.path
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Add the parent directory to sys.path
+sys.path.append(PROJECT_DIR)
+os.environ["PROJECT_DIR"] = PROJECT_DIR
+
 from data_loader import import_data
 from data_cleaner import process_data
 from filter_data import filter_data
 from transform import transform_data
-
-PROJECT_DIR = os.environ.get("PROJECT_DIR")
 
 # Defining the default paths for the Excel and pickle files
 DEFAULT_EXCEL_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'IMF_WEO_Data.xlsx')
