@@ -22,7 +22,7 @@ from src.filter_data import filter_data
 # Define default paths
 DEFAULT_EXCEL_PATH = os.path.join('data', 'raw_data', 'IMF_WEO_Data.xlsx')
 DEFAULT_PICKLE_PATH = os.path.join('data', 'processed_data', 'raw_data.pkl')
-DEFAULT_COUNTRIES_TO_DROP_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'countries_to_drop.csv')
+DEFAULT_COUNTRIES_TO_DROP_PATH = os.path.join('data', 'raw_data', 'countries_to_drop.csv')
 
 # Set Airflow configuration to enable XCom pickling
 conf.set('core', 'enable_xcom_pickling', 'True')
