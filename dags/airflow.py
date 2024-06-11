@@ -9,23 +9,19 @@ from airflow.operators.python import PythonOperator
 from airflow.configuration import conf
 
 # Add the src and utilities directories to sys.path
-SRC_DIR = '/opt/airflow/src'
-UTILITIES_DIR = '/opt/airflow/utilities'
-if SRC_DIR not in sys.path:
-    sys.path.append(SRC_DIR)
-if UTILITIES_DIR not in sys.path:
-    sys.path.append(UTILITIES_DIR)
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Import necessary modules from your project
-from data_cleaner import process_data
-from data_loader import import_data
-from transform import transform_data
-from filter_data import filter_data
+# Add the parent directory to sys.path
+sys.path.append(PROJECT_DIR)
+os.environ["PROJECT_DIR"] = PROJECT_DIR
+from src.data_cleaner import process_data
+from src.data_loader import import_data
+from src.transform import transform_data
+from src.filter_data import filter_data
 
 # Define default paths
-PROJECT_DIR = '/opt/airflow'  # Use the mounted volume path
-DEFAULT_EXCEL_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'IMF_WEO_Data.xlsx')
-DEFAULT_PICKLE_PATH = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'raw_data.pkl')
+DEFAULT_EXCEL_PATH = os.path.join('data', 'raw_data', 'IMF_WEO_Data.xlsx')
+DEFAULT_PICKLE_PATH = os.path.join('data', 'processed_data', 'raw_data.pkl')
 DEFAULT_COUNTRIES_TO_DROP_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'countries_to_drop.csv')
 
 # Set Airflow configuration to enable XCom pickling
@@ -73,7 +69,7 @@ with DAG(
     filter_dataset = PythonOperator(
         task_id='filter_dataset',
         python_callable=filter_data,
-        op_kwargs={'pickle_path': '{{ ti.xcom_pull(task_ids="transform_dataset") }}', 'countries_to_drop_path':DEFAULT_COUNTRIES_TO_DROP_PATH},
+        op_kwargs={'pickle_path': '{{ ti.xcom_pull(task_ids="Transform") }}', 'countries_to_drop_path':DEFAULT_COUNTRIES_TO_DROP_PATH},
         provide_context=True
     )
     # Define task dependencies

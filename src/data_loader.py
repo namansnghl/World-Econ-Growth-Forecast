@@ -2,7 +2,7 @@ import os
 import sys
 import pandas as pd
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_DIR = os.environ.get("PROJECT_DIR")
 
 sys.path.append(PROJECT_DIR)
 from utilities.logger import setup_logging

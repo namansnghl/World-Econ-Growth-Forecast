@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_DIR = os.environ.get("PROJECT_DIR")
 from utilities.logger import setup_logging
 my_logger = setup_logging()
 my_logger.set_logger("main_logger")
