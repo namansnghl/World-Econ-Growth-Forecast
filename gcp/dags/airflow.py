@@ -6,6 +6,7 @@ import sys
 from airflow import DAG
 from datetime import datetime, timedelta
 from airflow.operators.python import PythonOperator
+from airflow.providers.google.cloud.sensors.gcs import GCSObjectExistenceSensor
 from airflow.configuration import conf
 from airflow.models import Variable
 from data_cleaner import process_data
@@ -49,7 +50,15 @@ with DAG(
     schedule_interval=None,  # Set to None for manual triggering
     catchup=False  # Don't backfill past dates
 ) as dag:
-    
+      
+    # Task to check if raw data exists
+    raw_data_sensor_task = GCSObjectExistenceSensor(
+        task_id='check_raw_file_in_gcs',
+        bucket='us-east1-airflow-composer-05582c7e-bucket',
+        object='data/raw_data/IMF_WEO_Data.xlsx',
+        dag=dag,
+    )
+ 
     # Task to load data
     extract_data = PythonOperator(
         task_id='Extract_Data',
@@ -78,8 +87,9 @@ with DAG(
         op_kwargs={'pickle_path': '{{ ti.xcom_pull(task_ids="Transform") }}', 'countries_to_drop_path':GCP_COUNTRIES_TO_DROP_PATH},
         provide_context=True
     )
+
     # Define task dependencies
-    extract_data >> clean_data >> transform_dataset >> filter_dataset
+    raw_data_sensor_task >> extract_data >> clean_data >> transform_dataset >> filter_dataset
 
     # Optional: CLI access to the DAG
     if __name__ == "__main__":
