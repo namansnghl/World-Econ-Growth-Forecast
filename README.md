@@ -147,14 +147,16 @@ dvc add <file-path>
 
 8. **TensorFlow**: It provides a comprehensive ecosystem for developing, training, and deploying machine learning models. TensorFlow is used to build and train the predictive models in this project, leveraging its powerful APIs and tools to handle complex data and modeling tasks.
 
-9. **MLFlow**: Managing the machine learning lifecycle, including experimentation, reproducibility, and model deployment, along with tracking metrics and parameters. 
+9. **MLFlow**: Managing the machine learning lifecycle, including experimentation, reproducibility, and model deployment, along with tracking metrics and parameters.
 
-10. **FastAPI/Flask**: It serves as the web framework for building RESTful APIs to use the machine learning models as services for integration with other applications. 
+    <img src="assets/mlflow.PNG " width="800" height="400">
 
-11. **Logging**: Implements logging mechanisms to track the performance, errors, and usage of the deployed models. Logging provides insights into the model's behavior and performance in production, helping to identify and troubleshoot issues quickly.
+11. **FastAPI/Flask**: It serves as the web framework for building RESTful APIs to use the machine learning models as services for integration with other applications. 
 
-12. **Looker**: Utilized for business intelligence and data visualization to create interactive dashboards and reports that provide insights into model performance and business impact. 
+12. **Logging**: Implements logging mechanisms to track the performance, errors, and usage of the deployed models. Logging provides insights into the model's behavior and performance in production, helping to identify and troubleshoot issues quickly.
 
-13. **Streamlit**: Creates interactive web applications for visualizing data, model predictions, and performance metrics, facilitating easier engagement. 
+13. **Looker**: Utilized for business intelligence and data visualization to create interactive dashboards and reports that provide insights into model performance and business impact. 
 
-14. **Google Cloud Platform**: Provides scalable cloud infrastructure for hosting, managing, and deploying machine learning models and applications. GCP offers the necessary infrastructure to deploy models at scale, ensuring high availability and performance for the deployed services.
+14. **Streamlit**: Creates interactive web applications for visualizing data, model predictions, and performance metrics, facilitating easier engagement. 
+
+15. **Google Cloud Platform**: Provides scalable cloud infrastructure for hosting, managing, and deploying machine learning models and applications. GCP offers the necessary infrastructure to deploy models at scale, ensuring high availability and performance for the deployed services.
