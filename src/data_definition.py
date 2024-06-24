@@ -1,9 +1,5 @@
-# Clean blank rows before schema generation
-# Remove float from some columns which are compulsary
-
-import pandas as pd
-from pydantic import BaseModel, Field, ConfigDict
 from typing import List
+from pydantic import BaseModel, Field, ConfigDict
 
 class WeoRawRecord(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -70,11 +66,11 @@ class WeoRawRecord(BaseModel):
 class WeoRawContainer(BaseModel):
     records: List[WeoRawRecord]
 
-class WeoTransformed(BaseModel):
+
+
+
+class WeoCleanRecord(BaseModel):
     pass
 
-
-data = pd.read_excel("./data/raw_data/IMF_WEO_Data.xlsx", header=0)
-data.columns = map(str, data.columns)
-
-model = WeoRawContainer(records=[WeoRawRecord(**item) for item in data.to_dict(orient='records')[:1]])
+class WeoCleanContainer(BaseModel):
+    ...
