@@ -13,16 +13,16 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Add the parent directory to sys.path
 sys.path.append(PROJECT_DIR)
-os.environ["PROJECT_DIR"] = PROJECT_DIR
+
 from src.data_cleaner import process_data
 from src.data_loader import import_data
 from src.transform import transform_data
 from src.filter_data import filter_data
 
 # Define default paths
-DEFAULT_EXCEL_PATH = os.path.join('data', 'raw_data', 'IMF_WEO_Data.xlsx')
-DEFAULT_PICKLE_PATH = os.path.join('data', 'processed_data', 'raw_data.pkl')
-DEFAULT_COUNTRIES_TO_DROP_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'countries_to_drop.csv')
+DEFAULT_EXCEL_PATH = os.environ["RAW_FILE"]
+DEFAULT_PICKLE_PATH = os.environ["PROCESSED_FILE"]
+DEFAULT_COUNTRIES_TO_DROP_PATH = os.environ["COUNTRY_DROP"]
 
 # Set Airflow configuration to enable XCom pickling
 conf.set('core', 'enable_xcom_pickling', 'True')
