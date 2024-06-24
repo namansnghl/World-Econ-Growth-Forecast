@@ -1,6 +1,7 @@
 # Clean blank rows before schema generation
 # Remove float from some columns which are compulsary
 
+import src
 import pandas as pd
 from utilities.logger import setup_logging
 from pydantic import ValidationError

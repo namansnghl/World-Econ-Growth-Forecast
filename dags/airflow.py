@@ -1,8 +1,7 @@
 """
 The Airflow DAGs for data pipeline
 """
-import os
-import sys
+import os, sys
 from airflow import DAG
 from datetime import datetime, timedelta
 from airflow.operators.python import PythonOperator
@@ -14,6 +13,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Add the parent directory to sys.path
 sys.path.append(PROJECT_DIR)
 
+import src
 from src.data_cleaner import process_data
 from src.data_loader import import_data
 from src.transform import transform_data
