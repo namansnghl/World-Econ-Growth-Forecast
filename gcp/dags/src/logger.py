@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import json, os
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(current_dir, "log_config.json")
 
