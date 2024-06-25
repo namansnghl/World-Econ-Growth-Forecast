@@ -5,7 +5,7 @@ import src
 import pandas as pd
 from utilities.logger import setup_logging
 from pydantic import ValidationError
-from data_definition import *
+from src.schema_definition import *
 
 my_logger = setup_logging()
 my_logger.set_logger("main_logger")

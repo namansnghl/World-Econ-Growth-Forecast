@@ -18,10 +18,11 @@ from src.data_cleaner import process_data
 from src.data_loader import import_data
 from src.transform import transform_data
 from src.filter_data import filter_data
+from src.schema_check import verify_raw_data
 
 # Define default paths
-DEFAULT_EXCEL_PATH = os.environ["RAW_FILE"]
-DEFAULT_PICKLE_PATH = os.environ["PROCESSED_FILE"]
+DEFAULT_RAW_PATH = os.environ["RAW_FILE"]
+DEFAULT_TRANSF_PATH = os.environ["PROCESSED_FILE"]
 DEFAULT_COUNTRIES_TO_DROP_PATH = os.environ["COUNTRY_DROP"]
 
 # Set Airflow configuration to enable XCom pickling
@@ -29,7 +30,7 @@ conf.set('core', 'enable_xcom_pickling', 'True')
 
 # Define default arguments for the DAG
 data_load_args = {
-    'owner': 'manvithby',
+    'owner': 'weo_team',
     'start_date': datetime(2024, 5, 31, 18),
     'retries': 5,
     'retry_delay': timedelta(minutes=5)
@@ -44,11 +45,18 @@ with DAG(
     catchup=False  # Don't backfill past dates
 ) as dag:
     
+    # Task to check schema
+    raw_validate = PythonOperator(
+        task_id='Raw_Schema_Verification',
+        python_callable=verify_raw_data,
+        op_kwargs={'file_path': DEFAULT_RAW_PATH}
+    )
+
     # Task to load data
     extract_data = PythonOperator(
         task_id='Extract_Data',
         python_callable=import_data,
-        op_kwargs={'excel_path': DEFAULT_EXCEL_PATH, 'pickle_path': DEFAULT_PICKLE_PATH}
+        op_kwargs={'excel_path': DEFAULT_RAW_PATH, 'pickle_path': DEFAULT_TRANSF_PATH}
     )
 
     # Task to clean data
@@ -73,7 +81,7 @@ with DAG(
         provide_context=True
     )
     # Define task dependencies
-    extract_data >> clean_data >> transform_dataset >> filter_dataset
+    raw_validate >> extract_data >> clean_data >> transform_dataset >> filter_dataset
 
     # Optional: CLI access to the DAG
     if __name__ == "__main__":
