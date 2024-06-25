@@ -1,0 +1,13 @@
+FROM python:3.9-slim
+
+WORKDIR /
+
+ENV AIP_STORAGE_URI=gs://us-east1-airflow-composer-05582c7e-bucket/model 
+ENV BUCKET_NAME=us-east1-airflow-composer-05582c7e-bucket
+
+COPY train /train
+
+RUN pip install --no-cache-dir pandas google-cloud-storage scikit-learn joblib\
+    grpcio gcsfs python-dotenv
+
+ENTRYPOINT ["python", "-m", "train.train"]
