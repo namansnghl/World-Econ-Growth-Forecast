@@ -17,9 +17,9 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PROJECT_DIR)
 os.environ["PROJECT_DIR"] = PROJECT_DIR
 
-GITHUB_RAW_URL = 'https://raw.githubusercontent.com/namansnghl/World-Econ-Growth-Forecast/development/gcp/dags'
+GITHUB_RAW_URL = 'https://raw.githubusercontent.com/namansnghl/World-Econ-Growth-Forecast/development/gcp/dags/src'
 BUCKET_NAME = 'us-east1-airflow-composer-05582c7e-bucket'
-GCS_DAGS_PATH = f'gs://{BUCKET_NAME}/dags/'
+GCS_DAGS_PATH = f'gs://{BUCKET_NAME}/dags/src'
 
 # Set Airflow configuration to enable XCom pickling
 conf.set('core', 'enable_xcom_pickling', 'True')
@@ -67,19 +67,27 @@ with DAG(
     
     # Create tasks to pull scripts from GitHub and upload to GCS
     pull_data_loader = create_pull_task('pull_data_loader_script', 'data_loader.py')
+    pull_configini = create_pull_task('pull_data_loader_script', 'config.ini')
+    pull_src_init = create_pull_task('pull_data_loader_script', '__init__.py')
     pull_filter_data = create_pull_task('pull_filter_data_script', 'filter_data.py')
-    pull_data_cleaner = create_pull_task('pull_data_cleaner_script', 'data_cleaner.py')
+    pull_data_processing = create_pull_task('pull_data_cleaner_script', 'data_processing.py')
     pull_logger = create_pull_task('pull_logger_script', 'logger.py')
     pull_transform = create_pull_task('pull_transform_script', 'transform.py')
     pull_log_config = create_pull_task('pull_log_config_script', 'log_config.json')
+    pull_schema_check = create_pull_task('pull_log_config_script', 'schema_check.py')
+    pull_schema_def = create_pull_task('pull_log_config_script', 'schema_definition.py')
 
     # Create sensor tasks to check if scripts exist in GCS
     check_data_loader = create_sensor_task('check_data_loader_script', 'data_loader.py')
+    check_configini = create_sensor_task('check_data_loader_script', 'config.ini')
+    check_src_init = create_sensor_task('check_data_loader_script', '__init__.py')
     check_filter_data = create_sensor_task('check_filter_data_script', 'filter_data.py')
-    check_data_cleaner = create_sensor_task('check_data_cleaner_script', 'data_cleaner.py')
+    check_data_processing = create_sensor_task('check_data_cleaner_script', 'data_processing.py')
     check_logger = create_sensor_task('check_logger_script', 'logger.py')
     check_transform = create_sensor_task('check_transform_script', 'transform.py')
     check_log_config = create_sensor_task('check_log_config_script', 'log_config.json')
+    check_schema_check = create_sensor_task('check_log_config_script', 'schema_check.py')
+    check_schema_def = create_sensor_task('check_log_config_script', 'schema_definition.py')
 
     # At the end of the this DAG trigger data pipeline dag using TriggerDagRunOperator
     trigger_second_dag = TriggerDagRunOperator(
@@ -90,9 +98,12 @@ with DAG(
 
     # Setting the dependencies between tasks
     pull_data_loader >> check_data_loader >> trigger_second_dag
+    pull_configini >> check_configini >> trigger_second_dag
+    pull_src_init >> check_src_init >> trigger_second_dag
     pull_filter_data >> check_filter_data >> trigger_second_dag 
-    pull_data_cleaner >> check_data_cleaner >> trigger_second_dag
+    pull_data_processing >> check_data_processing >> trigger_second_dag
     pull_logger >> check_logger >> trigger_second_dag
     pull_transform >> check_transform >> trigger_second_dag
     pull_log_config >> check_log_config >> trigger_second_dag
-    
+    pull_schema_check >> check_schema_check >> trigger_second_dag
+    pull_schema_def >> check_schema_def >> trigger_second_dag
