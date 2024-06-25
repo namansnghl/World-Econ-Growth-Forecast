@@ -5,6 +5,11 @@ __pycache__/
 **/.DS_Store
 *.py[cod]
 *$py.class
+*.err
+*.pid
+*.out
+*.db
+*password.txt
 
 # C extensions
 *.so
