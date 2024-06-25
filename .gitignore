@@ -5,11 +5,14 @@ __pycache__/
 **/.DS_Store
 *.py[cod]
 *$py.class
+
+# Airflow
 *.err
 *.pid
 *.out
 *.db
 *password.txt
+**/airflow.cfg
 
 # C extensions
 *.so
