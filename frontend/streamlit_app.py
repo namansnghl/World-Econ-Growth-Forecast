@@ -7,7 +7,7 @@ import joblib
 from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.decomposition import PCA
 
-# Load the model and scaler
+
 PROJECT_DIR = os.environ.get("PROJECT_DIR")
 model_path = os.path.join(PROJECT_DIR, 'models', 'lstm_model.h5')
 scaler_path = os.path.join(PROJECT_DIR, 'models', 'scaler.pkl')
