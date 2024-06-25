@@ -2,17 +2,17 @@ from flask import Flask, jsonify, request
 from google.cloud import storage
 import joblib
 import os
-import json
 import logging
 from dotenv import load_dotenv
 from io import StringIO
 import gcsfs
+import pandas as pd
 
 # Get the current directory
-current_directory = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.environ.get("PROJECT_DIR")
 
 # load env variables
-dotenv_path = os.path.join(current_directory, '.env')
+dotenv_path = os.path.join(PROJECT_DIR, '.env')
 load_dotenv(dotenv_path)
 
 # Configure logging
@@ -75,21 +75,6 @@ def initialize_client_and_bucket(bucket_name):
     bucket = storage_client.get_bucket(bucket_name)
     return storage_client, bucket
 
-def load_stats(bucket, SCALER_BLOB_NAME='scaler/normalization_stats.json'):
-    """
-    Load normalization stats from a blob in the bucket.
-    Args:
-        bucket (Bucket): The bucket object.
-        SCALER_BLOB_NAME (str): The name of the blob containing the stats.
-    Returns:
-        dict: The loaded stats.
-    """
-    logging.info(f"Loading normalization stats from blob: {SCALER_BLOB_NAME}")
-    scaler_blob = bucket.blob(SCALER_BLOB_NAME)
-    stats_str = scaler_blob.download_as_text()
-    stats = json.loads(stats_str)
-    return stats
-
 def load_model(bucket, bucket_name):
     """
     Fetch and load the latest model from the bucket.
@@ -127,22 +112,10 @@ def fetch_latest_model(bucket_name, prefix="model/model_"):
                               reverse=True)[0]
     return latest_blob_name
 
-def normalize_data(instance, stats):
-    """
-    Normalizes a data instance using provided statistics.
-    Args:
-        instance (dict): A dictionary representing the data instance.
-        stats (dict): A dictionary with 'mean' and 'std' keys for normalization.
-    Returns:
-        dict: A dictionary representing the normalized instance.
-    """
-    logging.info("Normalizing data instance.")
-    normalized_instance = {}
-    for feature, value in instance.items():
-        mean = stats["mean"].get(feature, 0)
-        std = stats["std"].get(feature, 1)
-        normalized_instance[feature] = (value - mean) / std
-    return normalized_instance
+def scale_data(data, scaler):
+    df = pd.DataFrame(data, index=[0])
+    scaled_data = scaler.transform(df)
+    return scaled_data
 
 @app.route(os.environ['AIP_HEALTH_ROUTE'], methods=['GET'])
 def health_check():
@@ -161,42 +134,26 @@ def predict():
         Response: A Flask response containing JSON-formatted predictions.
     """
     logging.info("Prediction route called.")
-    request_json = request.get_json()
-    request_instances = request_json['instances']
+    data = request.get_json()
+    features = data['features']
 
-    formatted_instances = []
-    for instance in request_instances:
-        normalized_instance = normalize_data(instance, stats)
-        formatted_instance = [
-            normalized_instance['PT08.S1(CO)'],
-            normalized_instance['NMHC(GT)'],
-            normalized_instance['C6H6(GT)'],
-            normalized_instance['PT08.S2(NMHC)'],
-            normalized_instance['NOx(GT)'],
-            normalized_instance['PT08.S3(NOx)'],
-            normalized_instance['NO2(GT)'],
-            normalized_instance['PT08.S4(NO2)'],
-            normalized_instance['PT08.S5(O3)'],
-            normalized_instance['T'],
-            normalized_instance['RH'],
-            normalized_instance['AH']
-        ]
-        formatted_instances.append(formatted_instance)
+    # Scaling the features
+    scaled_features = scale_data(features, scaler)
+    prediction = model.predict(scaled_features)
 
-    prediction = model.predict(formatted_instances)
-    prediction = prediction.tolist()
-    output = {'predictions': [{'result': pred} for pred in prediction]}
-    # logging.info(f"Predictions: {output}")
-    return jsonify(output)
+    logging.info("Prediction complete.")
+    return jsonify({'prediction': prediction[0]})
 
 project_id, bucket_name = initialize_variables()
 storage_client, bucket = initialize_client_and_bucket(bucket_name)
-stats = load_stats(bucket)
 model = load_model(bucket, bucket_name)
+scaler_path = os.path.join(PROJECT_DIR, 'models', 'scaler.pkl')
+scaler = joblib.load(scaler_path)
+
 
 if __name__ == '__main__':
     try:
-        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8089)))
+        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
     finally:
         # Capture all log messages
         log_messages = logging.getLogger().handlers[1].stream.getvalue()
