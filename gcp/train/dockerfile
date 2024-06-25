@@ -8,6 +8,6 @@ ENV BUCKET_NAME=us-east1-airflow-composer-05582c7e-bucket
 COPY train /train
 
 RUN pip install --no-cache-dir pandas google-cloud-storage scikit-learn joblib\
-    grpcio gcsfs python-dotenv
+    grpcio gcsfs python-dotenv keras tensorflow
 
 ENTRYPOINT ["python", "-m", "train.train"]
