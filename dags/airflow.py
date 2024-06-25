@@ -5,6 +5,7 @@ import os, sys
 from airflow import DAG
 from datetime import datetime, timedelta
 from airflow.operators.python import PythonOperator
+from airflow.operators.email import EmailOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.configuration import conf
 
@@ -34,9 +35,39 @@ conf.set('core', 'enable_xcom_pickling', 'True')
 data_load_args = {
     'owner': 'neu_weo_team',
     'start_date': datetime(2024, 5, 31, 18),
-    'retries': 5,
-    'retry_delay': timedelta(minutes=1)
+    'retries': 3,
+    'retry_delay': timedelta(minutes=0.1)
 }
+
+email_id = 'weoteam@googlegroups.com'
+email_text1 = '<p>The task Load and Transform succeeded and triggered Data Cleaning.</p>'
+email_text2 = "<p>The task Data Cleaning is completed.</p>"
+email_fail1 = '<p>The DAG to Load and Transform Raw data has failed</p>'
+email_fail2 = '<p>The DAG to clean data has failed</p>'
+
+def notify_success(message, **kwargs):
+    global email_id
+    success_email = EmailOperator(
+        task_id='success_email',
+        to=email_id,
+        subject='Success Notification from Airflow',
+        html_content=message,
+        dag=kwargs['dag']
+    )
+    success_email.execute(context=kwargs)
+
+def notify_failure(context, message, **kwargs):
+    global email_id
+    failure_email = EmailOperator(
+        task_id='failure_email',
+        to=email_id,
+        subject='Failure Notification from Airflow',
+        html_content=message,
+        dag=context['dag']
+    )
+    failure_email.execute(context=context)
+
+
 
 # Define the DAG
 with DAG(
@@ -45,6 +76,7 @@ with DAG(
     description='DAG for Data load from raw file and process it',
     schedule_interval=None,
     catchup=False,
+    on_failure_callback=lambda context: notify_failure(context, email_fail1),
 ) as dag1:
     
     # Task to check schema
@@ -89,10 +121,19 @@ with DAG(
     trigger_cleaning = TriggerDagRunOperator(
         trigger_dag_id = 'Data_Cleaning',
         task_id='Trigger_Data_Cleaning_DAG',
-        trigger_rule='all_done',)
+        trigger_rule='all_done',
+        )
+    
+    send_email = PythonOperator(
+        task_id='send_email',
+        python_callable=notify_success,
+        op_args=[email_text1],
+        trigger_rule='all_success',
+        provide_context=True,
+        )
     
     # Define task dependencies
-    raw_validate >> load_raw >> pre_process_data >> transform >> save_data >> trigger_cleaning
+    raw_validate >> load_raw >> pre_process_data >> transform >> save_data >> trigger_cleaning >> send_email
 
 
 
@@ -102,6 +143,7 @@ with DAG(
     description='DAGs for Data Cleaning',
     schedule_interval=None,
     catchup=False,
+    on_failure_callback=lambda context: notify_failure(context, email_fail2),
 ) as dag2:
     
     # Task to load data
@@ -135,10 +177,18 @@ with DAG(
         op_kwargs={'df': clean_data.output, 'path': DEFAULT_CLEAN_PATH},
         provide_context = True,
     )
+
+    send_email = PythonOperator(
+        task_id='send_email',
+        python_callable=notify_success,
+        op_kwargs={'message': email_text2},
+        trigger_rule='all_success',
+        provide_context=True,
+        )
     
     load_pro_file >> clean_data
     load_drop_countries >> clean_data
-    clean_data >> save_data
+    clean_data >> save_data >> send_email
     
 # Optional: CLI access to the DAG
 if __name__ == "__main__":
