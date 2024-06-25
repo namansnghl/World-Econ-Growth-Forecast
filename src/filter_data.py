@@ -6,29 +6,17 @@ PROJECT_DIR = os.environ.get("PROJECT_DIR")
 my_logger = setup_logging()
 my_logger.set_logger("main_logger")
 
-def filter_data(pickle_path, countries_to_drop_path):
+def filter_data(df, countries_to_drop):
     """Function to filter data based on various criteria and save the final dataset."""
-    my_logger.write('info', f"Starting to filter data from {pickle_path}")
-
-    # Load the transformed data from pickle file
-    try:
-        df = pd.read_pickle(pickle_path)
-        my_logger.write('info', "Data successfully loaded from the transformed pickle file.")
-    except FileNotFoundError:
-        my_logger.write('error', "The transformed pickle file does not exist.")
-        raise FileNotFoundError("The transformed pickle file does not exist.")
-    except Exception as e:
-        my_logger.write('error', f"Failed to load data from the transformed pickle file: {e}")
-        raise
-
-    # Load the list of countries to drop
-    countries_to_drop = load_countries_to_drop(countries_to_drop_path)
+    my_logger.logger.info("Beginning to filter data")
 
     # Drop the specified countries
     df = df[~df['Country'].isin(countries_to_drop)]
+    my_logger.logger.info("Dropped specific countries")
 
     # Filter the DataFrame for the specified years
     df = filter_years(df)
+    my_logger.logger.info("Filtered out bad year data")
 
     # Define columns to drop
     columns_to_drop = [
@@ -44,21 +32,9 @@ def filter_data(pickle_path, countries_to_drop_path):
 
     # Drop the specified columns
     df = drop_columns(df, columns_to_drop)
+    my_logger.logger.info(f"Dropped columns {'\n'.join(columns_to_drop)}")
 
-    # Save the filtered DataFrame to a new Pickle and Excel file
-    filtered_pickle_path = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'filtered_data.pkl')
-    try:
-        df.to_pickle(filtered_pickle_path)
-        my_logger.write('info', f"Filtered data successfully saved to {filtered_pickle_path}")
-
-        filtered_excel_path = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'filtered_data.xlsx')
-        df.to_excel(filtered_excel_path, index=False)
-        my_logger.write('info', f"Filtered data successfully saved as an Excel file at {filtered_excel_path}.")
-    except Exception as e:
-        my_logger.write('error', f"Failed to save the filtered data: {e}")
-        raise
-
-    return filtered_pickle_path
+    return df
 
 def load_countries_to_drop(countries_to_drop_path):
     """Load the list of countries to drop from a CSV file."""
@@ -66,13 +42,14 @@ def load_countries_to_drop(countries_to_drop_path):
         countries_to_drop_df = pd.read_csv(countries_to_drop_path)
         countries_to_drop = countries_to_drop_df['Country'].tolist()
         my_logger.write('info', "Countries to drop successfully loaded.")
-        return countries_to_drop
     except FileNotFoundError:
         my_logger.write('error', "The countries to drop CSV file does not exist.")
         raise FileNotFoundError("The countries to drop CSV file does not exist.")
     except Exception as e:
         my_logger.write('error', f"Failed to load the countries to drop CSV file: {e}")
         raise
+    else:
+        return countries_to_drop
 
 def filter_years(df, start_year=1994, end_year=2029):
     """Filter the DataFrame for years between start_year and end_year (inclusive)."""

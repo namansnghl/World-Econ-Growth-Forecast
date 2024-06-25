@@ -1,5 +1,5 @@
 import os
-import sys
+from airflow.exceptions import AirflowException
 import pandas as pd
 
 PROJECT_DIR = os.environ.get("PROJECT_DIR")
@@ -8,30 +8,63 @@ from utilities.logger import setup_logging
 my_logger = setup_logging()
 my_logger.set_logger("main_logger")
 
-def import_data(excel_path, pickle_path):
-    """Function to import data from an Excel file and save it as a .pkl file."""
-    my_logger.logger.info(f"Starting to import data from {excel_path}")
+def load_file(path:str, type: str = "xlsx") -> pd.DataFrame:
+    """Reads a file and returns dataframe"""
+
+    data = None
+
+    if not os.path.exists(path):
+        my_logger.logger.error(f"load_file() File not found {path}")
+        raise AirflowException("Task failed as the file was not found to load.")
     
-    # Check if pickle file already exists
-    if os.path.exists(pickle_path):
-        my_logger.logger.info(f"Data has already been saved as a pickle file at {pickle_path}.")
-        return pickle_path
+    if type.lower()=="xlsx":
+        my_logger.logger.info(f"Loading data from {path}")
+        data = pd.read_excel(path)
+    elif type.lower()=="csv":
+        my_logger.logger.info(f"Loading data from {path}")
+        data = pd.read_csv(path)
+    elif type.lower()=="pickle":
+        my_logger.logger.info(f"Loading data from {path}")
+        data = pd.read_pickle(path)
+    else:
+        msg = f"Invalid file type {type} passed to load_file()"
+        my_logger.logger.error(msg)
+        raise AirflowException(msg)
+    return data
+
+def save_file(df: pd.DataFrame, path: str, file_type: str = "pickle") -> None:
+    """Saves a DataFrame to a file."""
+
+    # Validate file_type against supported extensions
+    valid_extensions = {
+        "xlsx": ".xlsx",
+        "csv": ".csv",
+        "pickle": ".pkl",
+    }
+
+    # Check if file_type is valid
+    if file_type.lower() not in valid_extensions:
+        msg = f"Invalid file type {file_type} passed to save_file()"
+        my_logger.logger.error(msg)
+        raise AirflowException(msg)
+
+    # Check if file path ends with correct extension
+    if not path.lower().endswith(valid_extensions[file_type.lower()]):
+        msg = f"Invalid file extension for {file_type}: {os.path.splitext(path)[1]}"
+        my_logger.logger.error(msg)
+        raise AirflowException(msg)
     
-    try:
-        # Read data from Excel file
-        df = pd.read_excel(excel_path)
-        my_logger.logger.info("Data successfully read from the Excel file.")
-    except Exception as e:
-        my_logger.logger.error(f"Failed to read data from Excel file: {e}")
-        raise
     
-    try:
-        # Save DataFrame as .pkl file
-        df.to_pickle(pickle_path)
-        my_logger.logger.info(f"Data successfully saved as a pickle file at {pickle_path}.")
-    except Exception as e:
-        my_logger.logger.error(f"Failed to save data as a pickle file: {e}")
-        raise
-    
-    # Return the path to the .pkl file
-    return pickle_path
+    if file_type.lower() == "xlsx":
+        my_logger.logger.info(f"Saving data to {path}")
+        df.to_excel(path, index=False)
+    elif file_type.lower() == "csv":
+        my_logger.logger.info(f"Saving data to {path}")
+        df.to_csv(path, index=False)
+    elif file_type.lower() == "pickle":
+        my_logger.logger.info(f"Saving data to {path}")
+        df.to_pickle(path)
+    else:
+        msg = f"Invalid file type {file_type} passed to save_file()"
+        my_logger.logger.error(msg)
+        raise AirflowException(msg)

@@ -7,7 +7,7 @@ sys.path.append(PROJECT_DIR)
 os.environ["PROJECT_DIR"] = PROJECT_DIR
 
 from data_loader import import_data
-from data_cleaner import process_data
+from src.data_processing import process_data
 from filter_data import filter_data
 from transform import transform_data
 
