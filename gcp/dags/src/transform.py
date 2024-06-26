@@ -1,6 +1,6 @@
 import os, src
 import pandas as pd
-from utilities.logger import setup_logging
+from src.logger import setup_logging
 
 PROJECT_DIR = os.environ.get("PROJECT_DIR")
 my_logger = setup_logging()

@@ -3,7 +3,7 @@
 
 import src
 import pandas as pd
-from utilities.logger import setup_logging
+from src.logger import setup_logging
 from pydantic import ValidationError
 from src.schema_definition import *
 from airflow.exceptions import AirflowException
