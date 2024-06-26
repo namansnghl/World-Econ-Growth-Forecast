@@ -15,7 +15,7 @@ def pre_processing(raw_data):
     my_logger.logger.info("Performing pre processing on raw file")
     # Perform data processing steps
     raw_data = drop_columns(raw_data, drop_cols)
-    my_logger.logger.info(f"Dropped below columns {'\n'.join(drop_cols)}")
+    my_logger.logger.info(f"Dropped below columns {drop_cols}")
     raw_data = combine_columns(raw_data)
     my_logger.logger.info("Combine columns completed")
     
