@@ -48,8 +48,7 @@ with DAG(
             retries=3, 
             retry_delay=timedelta(seconds=30),
             bash_command=(
-                f'curl -o /tmp/{script_name} {GITHUB_RAW_URL}/{script_name} && '
-                f'gsutil cp /tmp/{script_name} {GCS_DAGS_PATH}/{script_name}'
+                f'curl -sSL {GITHUB_RAW_URL}/{script_name} | gsutil cp - {GCS_DAGS_PATH}/{script_name}'
             ),
             dag=dag,
     )
@@ -57,7 +56,7 @@ with DAG(
      # Helper function to create GCSObjectExistenceSensor tasks
     def create_sensor_task(task_id, object_name):
         return GCSObjectExistenceSensor(
-            task_id=task_id,
+            task_id=task_id,    
             bucket=BUCKET_NAME,
             object=f'dags/src/{object_name}',
             timeout=300,
