@@ -120,7 +120,7 @@ with DAG(
     trigger_cleaning = TriggerDagRunOperator(
         trigger_dag_id = 'Data_Cleaning',
         task_id='Trigger_Data_Cleaning_DAG',
-        trigger_rule='all_done',
+        trigger_rule='all_success',
         )
     
     send_email = PythonOperator(
