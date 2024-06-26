@@ -5,7 +5,6 @@ import os, sys
 from airflow import DAG
 from datetime import datetime, timedelta
 from airflow.operators.python import PythonOperator
-from airflow.operators.email import EmailOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.configuration import conf
 import src # Do not remove
@@ -14,6 +13,10 @@ from src.data_loader import load_file, save_file
 from src.transform import transform_data
 from src.filter_data import *
 from src.schema_check import verify_raw_data
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from airflow.models import Variable
 
 # Define default paths
 DEFAULT_RAW_PATH = os.environ["RAW_FILE"]
@@ -32,33 +35,44 @@ data_load_args = {
     'retry_delay': timedelta(minutes=0.1)
 }
 
-email_id = 'weoteam@googlegroups.com'
+from_email = Variable.get("FROM_EMAIL")
+to_email = 'weoteam@googlegroups.com'
+smtp_port = Variable.get("SMTP_PORT")
+smtp_host = Variable.get("SMTP_HOST")
+smtp_password = Variable.get("PASSWORD")
 email_text1 = '<p>The task Load and Transform succeeded and triggered Data Cleaning.</p>'
 email_text2 = "<p>The task Data Cleaning is completed.</p>"
 email_fail1 = '<p>The DAG to Load and Transform Raw data has failed</p>'
 email_fail2 = '<p>The DAG to clean data has failed</p>'
 
+def send_email_func(subject, message):
+    global from_email, to_email, smtp_port, smtp_host, smtp_password
+    # Setup the MIME
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+
+    # Attach message
+    msg.attach(MIMEText(message, 'html'))
+
+    # Connect to the SMTP server
+    server = smtplib.SMTP(smtp_host, smtp_port)
+    server.starttls()
+    server.login(from_email, smtp_password)
+
+    # Send email
+    server.sendmail(from_email, to_email, msg.as_string())
+
+    # Disconnect from the server
+    server.quit()
+
 def notify_success(message, **kwargs):
-    global email_id
-    success_email = EmailOperator(
-        task_id='success_email',
-        to=email_id,
-        subject='Success Notification from Airflow',
-        html_content=message,
-        dag=kwargs['dag']
-    )
-    success_email.execute(context=kwargs)
+    send_email_func('Success Notification from Airflow', message)
 
 def notify_failure(context, message, **kwargs):
-    global email_id
-    failure_email = EmailOperator(
-        task_id='failure_email',
-        to=email_id,
-        subject='Failure Notification from Airflow',
-        html_content=message,
-        dag=context['dag']
-    )
-    failure_email.execute(context=context)
+    send_email_func('Failure Notification from Airflow', message)
+
 
 
 
