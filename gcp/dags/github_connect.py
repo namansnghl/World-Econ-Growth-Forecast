@@ -59,7 +59,7 @@ with DAG(
         return GCSObjectExistenceSensor(
             task_id=task_id,
             bucket=BUCKET_NAME,
-            object=f'dags/{object_name}',
+            object=f'dags/src/{object_name}',
             timeout=300,
             poke_interval=60,
             dag=dag,
