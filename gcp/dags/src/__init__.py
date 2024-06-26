@@ -10,7 +10,7 @@ CONFIG_CNTR_DROP_VAR = 'cntr_to_drop_file'
 
 def set_env_vars():
     curr_file = os.path.abspath(__file__)
-    PROJECT_DIR = f"gs://{Variable.get("base_path")}"
+    PROJECT_DIR = f"gs://{Variable.get('base_path')}"
     config = configparser.ConfigParser()
     config.read(os.path.join(os.path.dirname(curr_file), CONFIG_FILE))
 
