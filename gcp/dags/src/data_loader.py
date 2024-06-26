@@ -19,14 +19,14 @@ def load_file(path:str, type: str = "xlsx") -> pd.DataFrame:
     
     if type.lower()=="xlsx":
         my_logger.logger.info(f"Loading data from {path}")
-        excel_data = gcs_hook.download(bucket_name=Variable.get('base_path'), object_name=path[len(os.environ['PROJECT_DIR']):])
+        excel_data = gcs_hook.download(bucket_name=Variable.get('base_path'), object_name=path[len(os.environ['PROJECT_DIR'])+1:])
         data = pd.read_excel(excel_data)
     elif type.lower()=="csv":
         my_logger.logger.info(f"Loading data from {path}")
         data = pd.read_csv(path)
     elif type.lower()=="pickle":
         my_logger.logger.info(f"Loading data from {path}")
-        pickle_data = gcs_hook.download(bucket_name=Variable.get('base_path'), object_name=path[len(os.environ['PROJECT_DIR']):])
+        pickle_data = gcs_hook.download(bucket_name=Variable.get('base_path'), object_name=path[len(os.environ['PROJECT_DIR'])+1:])
         data = pd.read_pickle(pickle_data)
     else:
         msg = f"Invalid file type {type} passed to load_file()"
@@ -71,7 +71,7 @@ def save_file(df: pd.DataFrame, path: str, file_type: str = "pickle") -> None:
         pickle_buffer = BytesIO()
         df.to_pickle(pickle_buffer)  # Write the DataFrame to the BytesIO buffer as a pickle
         pickle_buffer.seek(0)  # Reset the buffer's cursor to the beginning
-        gcs_hook.upload(bucket_name=Variable.get('base_path'), object_name=path[len(os.environ['PROJECT_DIR']):], data=pickle_buffer.getvalue())
+        gcs_hook.upload(bucket_name=Variable.get('base_path'), object_name=path[len(os.environ['PROJECT_DIR'])+1:], data=pickle_buffer.getvalue())
     else:
         msg = f"Invalid file type {file_type} passed to save_file()"
         my_logger.logger.error(msg)
