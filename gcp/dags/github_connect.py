@@ -49,7 +49,7 @@ with DAG(
             retry_delay=timedelta(seconds=30),
             bash_command=(
                 f'curl -o /tmp/{script_name} {GITHUB_RAW_URL}/{script_name} && '
-                f'gsutil cp /tmp/{script_name} {GCS_DAGS_PATH}{script_name}'
+                f'gsutil cp /tmp/{script_name} {GCS_DAGS_PATH}/{script_name}'
             ),
             dag=dag,
     )
@@ -74,8 +74,8 @@ with DAG(
     pull_logger = create_pull_task('pull_logger_script', 'logger.py')
     pull_transform = create_pull_task('pull_transform_script', 'transform.py')
     pull_log_config = create_pull_task('pull_log_config_script', 'log_config.json')
-    pull_schema_check = create_pull_task('schema_check_script', 'schema_check.py')
-    pull_schema_def = create_pull_task('schema_def_script', 'schema_definition.py')
+    pull_schema_check = create_pull_task('pull_schema_check_script', 'schema_check.py')
+    pull_schema_def = create_pull_task('pull_schema_def_script', 'schema_definition.py')
 
     # Create sensor tasks to check if scripts exist in GCS
     check_data_loader = create_sensor_task('check_data_loader_script', 'data_loader.py')
