@@ -21,12 +21,6 @@ DEFAULT_TRANSF_PATH = os.environ["PROCESSED_FILE"]
 DEFAULT_COUNTRIES_TO_DROP_PATH = os.environ["COUNTRY_DROP"]
 DEFAULT_CLEAN_PATH = os.environ["CLEAN_FILE"]
 
-# Define default paths
-DEFAULT_RAW_PATH = os.environ["RAW_FILE"]
-DEFAULT_TRANSF_PATH = os.environ["PROCESSED_FILE"]
-DEFAULT_COUNTRIES_TO_DROP_PATH = os.environ["COUNTRY_DROP"]
-DEFAULT_CLEAN_PATH = os.environ["CLEAN_FILE"]
-
 # Set Airflow configuration to enable XCom pickling
 conf.set('core', 'enable_xcom_pickling', 'True')
 

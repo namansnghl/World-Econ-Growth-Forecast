@@ -12,10 +12,6 @@ def load_file(path:str, type: str = "xlsx") -> pd.DataFrame:
     """Reads a file and returns dataframe"""
 
     data = None
-
-    if not os.path.exists(path):
-        my_logger.logger.error(f"load_file() File not found {path}")
-        raise AirflowException("Task failed as the file was not found to load.")
     
     if type.lower()=="xlsx":
         my_logger.logger.info(f"Loading data from {path}")
