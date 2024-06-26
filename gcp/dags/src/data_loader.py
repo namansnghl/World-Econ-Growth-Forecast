@@ -27,7 +27,8 @@ def load_file(path:str, type: str = "xlsx") -> pd.DataFrame:
     elif type.lower()=="pickle":
         my_logger.logger.info(f"Loading data from {path}")
         pickle_data = gcs_hook.download(bucket_name=Variable.get('base_path'), object_name=path[len(os.environ['PROJECT_DIR'])+1:])
-        data = pd.read_pickle(pickle_data)
+        pickle_buffer = BytesIO(pickle_data)
+        data = pd.read_pickle(pickle_buffer)
     else:
         msg = f"Invalid file type {type} passed to load_file()"
         my_logger.logger.error(msg)
