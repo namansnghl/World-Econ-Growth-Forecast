@@ -46,8 +46,8 @@ email_text1 = '<p>The task Load and Transform succeeded and triggered Data Clean
 email_text2 = "<p>The task Data Cleaning is completed.</p>"
 email_fail1 = '<p>The DAG to Load and Transform Raw data has failed</p>'
 email_fail2 = '<p>The DAG to clean data has failed</p>'
-email_text3 = "<p>The task Model Training is completed.</p>"
-email_fail2 = '<p>The DAG to Train Model has failed</p>'
+email_text3 = "<p>The task Model Training & serve is completed.</p>"
+email_fail3 = '<p>The DAG to Train Model & serve has failed</p>'
 
 def notify_success(message, **kwargs):
     global email_id
@@ -195,9 +195,9 @@ with DAG(
     clean_data >> save_data >> send_email
     
 with DAG(
-    dag_id='Data_Cleaning',
+    dag_id='Model_Training_Serving',
     default_args=data_load_args,
-    description='DAGs for Data Cleaning',
+    description='DAGs for Serving Model',
     schedule_interval=None,
     catchup=False,
     on_failure_callback=lambda context: notify_failure(context, email_fail3),
@@ -209,6 +209,26 @@ with DAG(
             bash_command=(f"python {DEFAULT_PROJECT_DIR}/gcp/train/train.py")
     )
 
+    flask = BashOperator(
+            task_id="Flask_API_Update",
+            retries=3, 
+            retry_delay=timedelta(seconds=30),
+            bash_command=(f"python {DEFAULT_PROJECT_DIR}/gcp/serve/predict.py")
+    )
+    streamlit = BashOperator(
+            task_id="Start_Streamlit",
+            retries=3, 
+            retry_delay=timedelta(seconds=30),
+            bash_command=(f"python {DEFAULT_PROJECT_DIR}/gcp/serve/streamlit.py")
+    )
+
+    build = BashOperator(
+            task_id="Build_Vertex_AI",
+            retries=3, 
+            retry_delay=timedelta(seconds=30),
+            bash_command=(f"python {DEFAULT_PROJECT_DIR}/gcp/build.py")
+    )
+
     send_email = PythonOperator(
         task_id='send_email',
         python_callable=notify_success,
@@ -217,7 +237,7 @@ with DAG(
         provide_context=True,
         )
     
-    train_model >> send_email
+    train_model >> flask >> streamlit >> build >> send_email
     
 # Optional: CLI access to the DAG
 if __name__ == "__main__":
