@@ -101,18 +101,15 @@ for feature in features[2:]:
     min_val = min_values[feature]
     max_val = max_values[feature]
     
-    
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        
         st.write(f"{feature} (Min: {min_val}, Max: {max_val})")
     with col2:
-        
         user_inputs[feature] = st.number_input(
-            "", min_value=float(min_val), max_value=float(max_val),
+            "", min_value=float(min_val), max_value=float(max_val), value=float(max_val),
             help=f"Please enter a value between {min_val} and {max_val}",
-            key=feature  
+            key=feature
         )
 
 
