@@ -150,6 +150,8 @@ dvc add <file-path>
 9. **MLFlow**: Managing the machine learning lifecycle, including experimentation, reproducibility, and model deployment, along with tracking metrics and parameters.
 
     <img src="assets/mlflow.PNG " width="800" height="400">
+ 
+    <img src="assets/mlfloq1.PNG " width="800" height="400">
 
 11. **FastAPI/Flask**: It serves as the web framework for building RESTful APIs to use the machine learning models as services for integration with other applications. 
 
