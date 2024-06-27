@@ -17,6 +17,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from airflow.models import Variable
+from airflow.operators.bash import BashOperator
 
 # Define default paths
 DEFAULT_RAW_PATH = os.environ["RAW_FILE"]
@@ -44,6 +45,9 @@ email_text1 = '<p>The task Load and Transform succeeded and triggered Data Clean
 email_text2 = "<p>The task Data Cleaning is completed.</p>"
 email_fail1 = '<p>The DAG to Load and Transform Raw data has failed</p>'
 email_fail2 = '<p>The DAG to clean data has failed</p>'
+email_text3 = "<p>The task Model Training & serve is completed.</p>"
+email_fail3 = '<p>The DAG to Train Model & serve has failed</p>'
+DEFAULT_PROJECT_DIR = os.environ["PROJECT_DIR"]
 
 def send_email_func(subject, message):
     global from_email, to_email, smtp_port, smtp_host, smtp_password
@@ -197,7 +201,52 @@ with DAG(
     load_drop_countries >> clean_data
     clean_data >> save_data >> send_email
     
+with DAG(
+    dag_id='Model_Training_Serving',
+    default_args=data_load_args,
+    description='DAGs for Serving Model',
+    schedule_interval=None,
+    catchup=False,
+    on_failure_callback=lambda context: notify_failure(context, email_fail3),
+) as dag3:
+    train_model = BashOperator(
+            task_id="Train_Model",
+            retries=3, 
+            retry_delay=timedelta(seconds=30),
+            bash_command=(f"python {DEFAULT_PROJECT_DIR}/dags/src/train.py")
+    )
+
+    flask = BashOperator(
+            task_id="Flask_API_Update",
+            retries=3, 
+            retry_delay=timedelta(seconds=30),
+            bash_command=(f"python {DEFAULT_PROJECT_DIR}/dags/src/predict.py")
+    )
+    streamlit = BashOperator(
+            task_id="Start_Streamlit",
+            retries=3, 
+            retry_delay=timedelta(seconds=30),
+            bash_command=(f"python {DEFAULT_PROJECT_DIR}/dags/src/streamlit.py")
+    )
+
+    build = BashOperator(
+            task_id="Build_Vertex_AI",
+            retries=3, 
+            retry_delay=timedelta(seconds=30),
+            bash_command=(f"python {DEFAULT_PROJECT_DIR}/dags/src/build.py")
+    )
+
+    send_email = PythonOperator(
+        task_id='send_email',
+        python_callable=notify_success,
+        op_kwargs={'message': email_text3},
+        trigger_rule='all_success',
+        provide_context=True,
+        )
+    
+    train_model >> flask >> streamlit >> build >> send_email
 # Optional: CLI access to the DAG
 if __name__ == "__main__":
     dag1.cli()
     dag2.cli()
+    dag3.cli()
