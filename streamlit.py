@@ -2,22 +2,14 @@ import os
 import streamlit as st
 import pandas as pd
 import numpy as np
-from keras.models import load_model
-import joblib
-from sklearn.preprocessing import StandardScaler, RobustScaler
-from sklearn.decomposition import PCA
+import requests
 
-os.environ["PROJECT_DIR"] = "/Users/nisharggosai/Desktop/MLOps Project/World-Econ-Growth-Forecast"
 # Set project directory
 PROJECT_DIR = os.environ.get("PROJECT_DIR")
-model_path = os.path.join(PROJECT_DIR, 'models', 'lstm_model.h5')
-scaler_path = os.path.join(PROJECT_DIR, 'models', 'scaler.pkl')
 
-# Load model and scaler
-model = load_model(model_path)
-scaler = joblib.load(scaler_path)
+clean_data_path = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'clean_data.pkl')
+df = pd.read_pickle(clean_data_path)
 
-# Dictionary mapping country codes to country names
 country_code_to_name = {
     111: 'United States', 112: 'United Kingdom', 122: 'Austria', 124: 'Belgium', 128: 'Denmark', 
     132: 'France', 134: 'Germany', 136: 'Italy', 137: 'Luxembourg', 138: 'Netherlands', 142: 'Norway', 
@@ -54,49 +46,18 @@ country_code_to_name = {
     961: 'Slovenia', 962: 'North Macedonia', 963: 'Bosnia and Herzegovina', 964: 'Poland', 968: 'Romania'
 }
 
-# Function to preprocess the input data
-def preprocess_data(data, scaler):
-    """
-    Preprocess user input data to match the format used for prediction.
-
-    Args:
-    data (pd.DataFrame): User input data.
-    scaler: Scaler object used for scaling the data during training.
-
-    Returns:
-    np.ndarray: Preprocessed data reshaped for LSTM model input.
-    """
-    try:
-        # Convert all inputs to float64 to ensure consistency
-        numerical_data = data.astype(np.float64)
-        
-        # Scale numerical features using the loaded scaler
-        scaled_data = scaler.transform(numerical_data)
-
-        # Prepare data for LSTM model input (reshape to (samples, timesteps, features))
-        lstm_data = scaled_data.reshape((scaled_data.shape[0], scaled_data.shape[1], 1))
-
-        return lstm_data
-    except Exception as e:
-        st.error(f"Error during preprocessing: {e}")
-
-# Function to display country name based on country code
 def get_country_name(country_code):
     if country_code in country_code_to_name:
         return country_code_to_name[country_code]
     else:
         return "Country name not found"
 
-# Streamlit app
 st.title('Gross domestic product prediction')
 
-# Input fields for user data
 st.header('Please provide the following information')
 
-# Initialize dictionary to store user inputs
 user_inputs = {}
 
-# List of features for user input
 features = ['Country', 'Year',
             'Current account balance - U.S. dollars (Billions)',
             'General government gross debt - National currency (Billions)',
@@ -117,76 +78,74 @@ features = ['Country', 'Year',
             'Volume of imports of goods and services - Percent change (Units)'
             ]
 
-# Dropdown list of countries for user input
 selected_country = st.selectbox('Country', sorted(country_code_to_name.values()))
 
-# Get the WEO Country Code based on selected country
 weo_country_code = next(key for key, value in country_code_to_name.items() if value == selected_country)
 
-# Populate user inputs dictionary
 user_inputs['WEO Country Code'] = weo_country_code
 
-# Loop through the rest of the features for user input
-for feature in features[1:]:  # Skip 'Country' as it's already added
-    if feature == 'Year':
-        user_inputs[feature] = st.text_input(feature)
-    else:
-        user_inputs[feature] = st.number_input(feature)
+years = list(range(1994, 2030))
+selected_year = st.selectbox('Year', years)
+user_inputs['Year'] = selected_year
 
-# Create a DataFrame with user input
+country_data = df[df['WEO Country Code'] == weo_country_code]
+
+if not country_data.empty:
+    min_values = country_data.min()
+    max_values = country_data.max()
+else:
+    st.error(f"No data available for the selected country: {selected_country}")
+
+
+for feature in features[2:]:
+    min_val = min_values[feature]
+    max_val = max_values[feature]
+    
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        
+        st.write(f"{feature} (Min: {min_val}, Max: {max_val})")
+    with col2:
+        
+        user_inputs[feature] = st.number_input(
+            "", min_value=float(min_val), max_value=float(max_val),
+            help=f"Please enter a value between {min_val} and {max_val}",
+            key=feature  
+        )
+
+
 input_data = pd.DataFrame([user_inputs])
 
-# Display user inputs
 st.subheader('User Inputs')
 st.write(input_data)
 
-# Get country name based on user input country code
+
 country_code = input_data.iloc[0]['WEO Country Code']
-country_name = get_country_name(int(country_code))  # Ensure country_code is converted to int
+country_name = get_country_name(int(country_code))  
 
-# # Display predicted GDP for the selected country
-# st.subheader(f'Predicted GDP for {country_name}')
 
-# Process input data for prediction
+st.subheader(f'Predicted GDP for {country_name}')
+
+
+def call_prediction_api(input_data):
+    api_url = "http://localhost:5000/predict"  
+    data = {"features": input_data.values.tolist()}
+    response = requests.post(api_url, json=data)
+    return response.json()
+
+
 if not input_data.empty:
     try:
-        clean_data = preprocess_data(input_data, scaler)
-        # Predict button
+        
         if st.button('Predict'):
-            # Make prediction using the loaded model
-            prediction = model.predict(clean_data)
-            st.write(f'Predicted GDP: {prediction[0][0]}')
+            
+            result = call_prediction_api(input_data)
+            
+            if "error" in result:
+                st.error(f"Error from API: {result['error']}")
+            else:
+                st.write(f'Predicted GDP: {result["prediction"]}')
     except Exception as e:
         st.error(f"Error during input processing: {e}")
-
-# ###################
-# Index(['WEO Country Code', 'Year',
-#        'Current account balance - U.S. dollars (Billions)',
-#        'General government gross debt - National currency (Billions)',
-#        'General government net lending/borrowing - National currency (Billions)',
-#        'General government primary net lending/borrowing - National currency (Billions)',
-#        'General government revenue - National currency (Billions)',
-#        'General government total expenditure - National currency (Billions)',,
-#        'Gross domestic product, deflator - Index (Units)',
-#        'Implied PPP conversion rate - National currency per current international dollar (Units)',
-#        'Inflation, average consumer prices - Index (Units)',
-#        'Inflation, average consumer prices - Percent change (Units)',
-#        'Inflation, end of period consumer prices - Index (Units)',
-#        'Inflation, end of period consumer prices - Percent change (Units)',
-#        'Population - Persons (Millions)',
-#        'Volume of Imports of goods - Percent change (Units)',
-#        'Volume of exports of goods - Percent change (Units)',
-#        'Volume of exports of goods and services - Percent change (Units)',
-#        'Volume of imports of goods and services - Percent change (Units)'],
-#       dtype='object', name='Subject')
-
-# [[-0.07751127]
-#  [-0.46030302]
-#  [-0.19378911]
-#  [-0.16471683]
-#  [ 0.28191482]
-#  [ 0.55062992]
-#  [ 0.53987398]
-#  [ 0.26616762]
-#  [-1.05652391]
-#  [-0.5870985 ]]
