@@ -8,6 +8,7 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.email import EmailOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.configuration import conf
+from airflow.operators.bash import BashOperator
 
 # Add the src and utilities directories to sys.path
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +28,7 @@ DEFAULT_RAW_PATH = os.environ["RAW_FILE"]
 DEFAULT_TRANSF_PATH = os.environ["PROCESSED_FILE"]
 DEFAULT_COUNTRIES_TO_DROP_PATH = os.environ["COUNTRY_DROP"]
 DEFAULT_CLEAN_PATH = os.environ["CLEAN_FILE"]
+DEFAULT_PROJECT_DIR = os.environ["PROJECT_DIR"]
 
 # Set Airflow configuration to enable XCom pickling
 conf.set('core', 'enable_xcom_pickling', 'True')
@@ -44,6 +46,8 @@ email_text1 = '<p>The task Load and Transform succeeded and triggered Data Clean
 email_text2 = "<p>The task Data Cleaning is completed.</p>"
 email_fail1 = '<p>The DAG to Load and Transform Raw data has failed</p>'
 email_fail2 = '<p>The DAG to clean data has failed</p>'
+email_text3 = "<p>The task Model Training is completed.</p>"
+email_fail2 = '<p>The DAG to Train Model has failed</p>'
 
 def notify_success(message, **kwargs):
     global email_id
@@ -189,6 +193,31 @@ with DAG(
     load_pro_file >> clean_data
     load_drop_countries >> clean_data
     clean_data >> save_data >> send_email
+    
+with DAG(
+    dag_id='Data_Cleaning',
+    default_args=data_load_args,
+    description='DAGs for Data Cleaning',
+    schedule_interval=None,
+    catchup=False,
+    on_failure_callback=lambda context: notify_failure(context, email_fail3),
+) as dag3:
+    train_model = BashOperator(
+            task_id="Train_Model",
+            retries=3, 
+            retry_delay=timedelta(seconds=30),
+            bash_command=(f"python {DEFAULT_PROJECT_DIR}/gcp/train/train.py")
+    )
+
+    send_email = PythonOperator(
+        task_id='send_email',
+        python_callable=notify_success,
+        op_kwargs={'message': email_text3},
+        trigger_rule='all_success',
+        provide_context=True,
+        )
+    
+    train_model >> send_email
     
 # Optional: CLI access to the DAG
 if __name__ == "__main__":
