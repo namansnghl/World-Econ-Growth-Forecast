@@ -156,7 +156,7 @@ dvc add <file-path>
 MLflow Experiment Tracking:
 
    
-    <img src="assets/mlfloq1.PNG " width="800" height="400">
+<img src="assets/mlfloq1.PNG " width="800" height="400">
 
 11. **FastAPI/Flask**: It serves as the web framework for building RESTful APIs to use the machine learning models as services for integration with other applications. 
 
