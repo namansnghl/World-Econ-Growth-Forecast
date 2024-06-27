@@ -1,17 +1,31 @@
 import os
-import pytest
-from data_loader import import_data
+import src
+from src.data_loader import *
+from numpy import nan
 
 # Determine the absolute path of the project directory
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_EXCEL_PATH = os.path.join(PROJECT_DIR, 'data', 'raw_data', 'IMF_WEO_Data.xlsx')
-DEFAULT_PICKLE_PATH = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'raw_data.pkl')
+DEFAULT_RAW_PATH = os.environ["RAW_FILE"]
+DEFAULT_TRANSF_PATH = os.environ["PROCESSED_FILE"]
 
-def test_import_data():
-    """
-    Test that import_data correctly imports data from Excel and saves it as a pickle file.
-    """
-    result = import_data(excel_path=DEFAULT_EXCEL_PATH, pickle_path=DEFAULT_PICKLE_PATH)
-    assert result == DEFAULT_PICKLE_PATH, f"Expected {DEFAULT_PICKLE_PATH}, but got {result}."
-    # Check if pickle file is created
-    assert os.path.exists(DEFAULT_PICKLE_PATH), "Pickle file was not created."
+test_data = pd.DataFrame({
+        'Name': ['Alice', nan, 'Charlie', 'David', 'Eve'],
+        'Age': [25, 30, 35, 40, nan],
+        'City': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Boston']
+        })
+
+def test_load_file_xl():
+    df = load_file(DEFAULT_RAW_PATH, 'xlsx')
+    assert df is not None, f"Failed to load file from {DEFAULT_RAW_PATH} as pickle"
+    assert isinstance(df, pd.DataFrame), "Expected a pandas DataFrame"
+
+
+def test_load_file_pkl():
+    df = load_file(DEFAULT_TRANSF_PATH, 'pickle')
+    assert df is not None, f"Failed to load file from {DEFAULT_TRANSF_PATH} as pickle"
+    assert isinstance(df, pd.DataFrame), "Expected a pandas DataFrame"
+
+def test_save_file_pkl():
+    file_path = './test.pkl'
+    global test_data
+    save_file(test_data, file_path)
+    assert os.path.exists(file_path) == True, "Unable to save pickle file"
