@@ -1,0 +1,5 @@
+outs:
+- md5: 3c117207fa52a6176700f18ff7752ebc
+  size: 2564567
+  hash: md5
+  path: Transformed.xlsx
