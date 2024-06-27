@@ -151,7 +151,11 @@ dvc add <file-path>
     
     MLflow Model monitoring: Tracked and saved various elements during the training process, including hyperparameters like the number of epochs and batch size, and key performance metrics such as loss, validation loss, mean absolute error (MAE), mean squared error (MSE), and R-squared (R²). Additionally, MLflow logged the trained LSTM model and its architecture as artifacts, ensuring that we could reproduce and evaluate the model's performance across different runs.
     <img src="assets/mlflow.PNG " width="800" height="400">
-    MLflow Experiment Tracking: 
+
+    
+MLflow Experiment Tracking:
+
+   
     <img src="assets/mlfloq1.PNG " width="800" height="400">
 
 11. **FastAPI/Flask**: It serves as the web framework for building RESTful APIs to use the machine learning models as services for integration with other applications. 
