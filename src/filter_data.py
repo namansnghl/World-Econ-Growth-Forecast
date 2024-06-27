@@ -32,7 +32,7 @@ def filter_data(df, countries_to_drop):
 
     # Drop the specified columns
     df = drop_columns(df, columns_to_drop)
-    my_logger.logger.info(f"Dropped columns {'\n'.join(columns_to_drop)}")
+    my_logger.logger.info(f"Dropped columns {columns_to_drop}")
 
     return df
 
