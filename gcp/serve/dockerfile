@@ -4,19 +4,19 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-COPY serve/predict.py /app/
+COPY serve/predict.py serve/streamlit.py /app/
 
 # Install Flask and google-cloud-storage
 RUN pip install Flask google-cloud-storage scikit-learn grpcio gcsfs  \
-    python-dotenv
+    python-dotenv streamlit
 
-ENV AIP_STORAGE_URI=gs://us-east1-airflow-composer-05582c7e-bucket/model
+ENV AIP_STORAGE_URI=gs://us-east1-composer-airflow-7e8e089d-bucket/model
 ENV AIP_HEALTH_ROUTE=/ping
 ENV AIP_PREDICT_ROUTE=/predict
 ENV AIP_HTTP_PORT=8080
-ENV BUCKET_NAME=us-east1-airflow-composer-05582c7e-bucket
+ENV BUCKET_NAME=us-east1-composer-airflow-7e8e089d-bucket
 
 ENV PROJECT_ID=wegf-mlops
 
 # Run predict.py when the container launches
-ENTRYPOINT ["python", "predict.py"]
+CMD ["sh", "-c", "streamlit run streamlit_app.py & python predict.py"]

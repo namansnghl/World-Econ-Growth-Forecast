@@ -1,22 +1,15 @@
+from io import StringIO
 from flask import Flask, jsonify, request
 from google.cloud import storage
 import joblib
 import os
 import logging
-from dotenv import load_dotenv
-from io import StringIO
 import gcsfs
 import pandas as pd
-
-# Get the current directory
-PROJECT_DIR = os.environ.get("PROJECT_DIR")
-
-# load env variables
-dotenv_path = os.path.join(PROJECT_DIR, '.env')
-load_dotenv(dotenv_path)
+from keras.models import load_model
 
 # Configure logging
-gs_log_file_path = 'gs://us-east1-airflow-composer-05582c7e-bucket/logs/flask_log_file.log'
+gs_log_file_path = 'gs://us-east1-composer-airflow-7e8e089d-bucket/logs/flask_log_file.log'
 
 def configure_logging():
     # Configure logging to console and a custom StringIO handler
@@ -27,7 +20,8 @@ def configure_logging():
 
 configure_logging()
 
-fs = gcsfs.GCSFileSystem(project='timeseries-end-to-end-406317')
+fs = gcsfs.GCSFileSystem(project='wegf-mlops')
+MODEL_DIR = os.environ.get("AIP_STORAGE_URI")
 
 def upload_log_to_gcs(log_messages, gcs_log_path):
     """
@@ -75,47 +69,97 @@ def initialize_client_and_bucket(bucket_name):
     bucket = storage_client.get_bucket(bucket_name)
     return storage_client, bucket
 
-def load_model(bucket, bucket_name):
+def load_model(bucket_name, model_dir):
     """
     Fetch and load the latest model from the bucket.
-    Args:
-        bucket (Bucket): The bucket object.
-        bucket_name (str): The name of the bucket.
-    Returns:
-        _BaseEstimator: The loaded model.
-    """
-    # logging.info("Fetching and loading the latest model.")
-    latest_model_blob_name = fetch_latest_model(bucket_name)
-    local_model_file_name = os.path.basename(latest_model_blob_name)
-    model_blob = bucket.blob(latest_model_blob_name)
-    model_blob.download_to_filename(local_model_file_name)
-    model = joblib.load(local_model_file_name)
-    return model
 
-def fetch_latest_model(bucket_name, prefix="model/model_"):
+    Args:
+        bucket_name (str): The name of the GCS bucket.
+        model_dir (str): The directory path in the bucket where models are stored.
+
+    Returns:
+        tuple: The loaded model, scaler, and PCA.
+    """
+    logging.info("Fetching and loading the latest model, scaler, and PCA.")
+    
+    # Fetch latest model, scaler, and pca file names
+    latest_model_blob_name = fetch_latest_model(bucket_name, model_dir, 'lstm_model_')
+    latest_scaler_blob_name = fetch_latest_model(bucket_name, model_dir, 'scaler_')
+    latest_pca_blob_name = fetch_latest_model(bucket_name, model_dir, 'pca_')
+
+    # Download files to local temp directory
+    local_model_file_path = '/tmp/model.h5'
+    local_scaler_file_path = '/tmp/scaler.pkl'
+    local_pca_file_path = '/tmp/pca.pkl'
+
+    download_blob(bucket_name, latest_model_blob_name, local_model_file_path)
+    download_blob(bucket_name, latest_scaler_blob_name, local_scaler_file_path)
+    download_blob(bucket_name, latest_pca_blob_name, local_pca_file_path)
+
+    # Load the downloaded model, scaler, and PCA
+    model = joblib.load(local_model_file_path)
+    scaler = joblib.load(local_scaler_file_path)
+    pca = joblib.load(local_pca_file_path)
+
+    return model, scaler, pca
+
+def fetch_latest_model(bucket_name, model_dir, prefix):
     """Fetches the latest model file from the specified GCS bucket.
     Args:
         bucket_name (str): The name of the GCS bucket.
+        model_dir (str): The directory path in the bucket where models are stored.
         prefix (str): The prefix of the model files in the bucket.
     Returns:
         str: The name of the latest model file.
     """
-    # logging.info(f"Fetching the latest model from bucket: {bucket_name}")
-    blobs = storage_client.list_blobs(bucket_name, prefix=prefix)
+    logging.info(f"Fetching the latest {prefix}model from bucket: {bucket_name}, directory: {model_dir}")
+    blobs = storage_client.list_blobs(bucket_name, prefix=model_dir + prefix)
 
     blob_names = [blob.name for blob in blobs]
     if not blob_names:
-        logging.error("Error: No model files found in the GCS bucket.")
-        raise ValueError("No model files found in the GCS bucket.")
+        logging.error(f"Error: No {prefix}model files found in the GCS bucket.")
+        raise ValueError(f"No {prefix}model files found in the GCS bucket in directory {model_dir}.")
 
-    latest_blob_name = sorted(blob_names, key=lambda x: x.split('_')[-1],
-                              reverse=True)[0]
+    latest_blob_name = sorted(blob_names, key=lambda x: x.split('_')[-1], reverse=True)[0]
     return latest_blob_name
 
-def scale_data(data, scaler):
-    df = pd.DataFrame(data, index=[0])
-    scaled_data = scaler.transform(df)
-    return scaled_data
+def download_blob(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a blob from the bucket."""
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+    logging.info(f"Blob {source_blob_name} downloaded to {destination_file_name}")
+
+def scale_data(features, scaler, pca):
+    try:
+        # Convert features to DataFrame
+        features_df = pd.DataFrame(features)
+
+        # Log the shape of features_df before scaling
+        logging.debug(f"Features DataFrame shape before scaling: {features_df.shape}")
+
+        # Scale the features
+        scaled_features = scaler.transform(features_df)
+
+        # Log the shape of scaled_features after scaling
+        logging.debug(f"Scaled features shape: {scaled_features.shape}")
+
+        # Apply PCA transformation
+        pca_features = pca.transform(scaled_features)
+
+        # Log the shape of pca_features after PCA transformation
+        logging.debug(f"PCA features shape: {pca_features.shape}")
+
+        # Reshape for LSTM input
+        lstm_features = pca_features.reshape((pca_features.shape[0], pca_features.shape[1], 1))
+
+        # Log the shape of lstm_features after reshaping
+        logging.debug(f"LSTM features shape: {lstm_features.shape}")
+
+        return lstm_features
+    except Exception as e:
+        logging.error(f"Error in scaling data: {e}")
+        raise
 
 @app.route(os.environ['AIP_HEALTH_ROUTE'], methods=['GET'])
 def health_check():
@@ -133,27 +177,36 @@ def predict():
     Returns:
         Response: A Flask response containing JSON-formatted predictions.
     """
-    logging.info("Prediction route called.")
-    data = request.get_json()
-    features = data['features']
+    try:
+        logging.info("Prediction route called.")
+        data = request.get_json()
+        print(data)
+        logging.debug(f"Received data: {data}")
 
-    # Scaling the features
-    scaled_features = scale_data(features, scaler)
-    prediction = model.predict(scaled_features)
+        features = data.get('features')
+        if features is None:
+            raise ValueError("No features provided in the input data")
 
-    logging.info("Prediction complete.")
-    return jsonify({'prediction': prediction[0]})
+        if len(features[0]) != 19:
+            raise ValueError("Input data must have 19 features.")
+        
+        # Scaling the features
+        scaled_features = scale_data(features, scaler, pca)
+        prediction = model.predict(scaled_features)
+
+        logging.info("Prediction complete.")
+        return jsonify({'prediction': prediction[0].tolist()})
+    except Exception as e:
+        logging.error(f"Error in prediction: {e}")
+        return jsonify({"error": str(e)}), 500
 
 project_id, bucket_name = initialize_variables()
 storage_client, bucket = initialize_client_and_bucket(bucket_name)
-model = load_model(bucket, bucket_name)
-scaler_path = os.path.join(PROJECT_DIR, 'models', 'scaler.pkl')
-scaler = joblib.load(scaler_path)
-
+model, scaler, pca = load_model(bucket_name, MODEL_DIR)
 
 if __name__ == '__main__':
     try:
-        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+        app.run(host='0.0.0.0', port=8080)
     finally:
         # Capture all log messages
         log_messages = logging.getLogger().handlers[1].stream.getvalue()

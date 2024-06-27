@@ -1,21 +1,53 @@
+from io import StringIO
+from google.cloud import storage
 import os
+import logging
+import gcsfs
 import pandas as pd
-import numpy as np
 from sklearn.preprocessing import RobustScaler, StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.decomposition import PCA
 from keras.models import Sequential
 from keras.layers import LSTM, Dense
-from utilities.logger import setup_logging
-import joblib  # For saving the model and scaler
+import joblib 
 import time
 from memory_profiler import memory_usage
 
-# Set up logging
-PROJECT_DIR = os.environ.get("PROJECT_DIR")
-my_logger = setup_logging()
-my_logger.set_logger("model_training_logger")
+def configure_logging():
+    # Configure logging to console and a custom StringIO handler
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    log_stream = StringIO()
+    file_handler = logging.StreamHandler(log_stream)
+    logging.getLogger().addHandler(file_handler)
+
+configure_logging()
+
+fs = gcsfs.GCSFileSystem(project='wegf-mlops')
+storage_client = storage.Client()
+bucket_name = os.getenv("BUCKET_NAME")
+MODEL_DIR = os.environ.get("AIP_STORAGE_URI")
+
+# Configure logging
+gs_log_file_path = f'gs://{bucket_name}/logs/flask_log_file.log'
+
+def upload_log_to_gcs(log_messages, gcs_log_path):
+    """
+    Upload log messages to Google Cloud Storage.
+
+    Args:
+        log_messages (str): The log messages to be uploaded.
+        gcs_log_path (str): The GCS path to upload the log messages.
+
+    Returns:
+        None
+    """
+    try:
+        with fs.open(gcs_log_path, 'wb') as f:
+            f.write(log_messages.encode())
+        logging.info(f"Log messages successfully uploaded to {gcs_log_path}")
+    except Exception as e:
+        logging.error(f"Error uploading log messages to GCS: {e}")
+        raise
 
 def load_filtered_data(filtered_pickle_path):
     """
@@ -33,13 +65,13 @@ def load_filtered_data(filtered_pickle_path):
     """
     try:
         df = pd.read_pickle(filtered_pickle_path)
-        my_logger.write('info', f"Filtered data successfully loaded from {filtered_pickle_path}")
+        logging.write('info', f"Filtered data successfully loaded from {filtered_pickle_path}")
         return df
     except FileNotFoundError:
-        my_logger.write('error', "The filtered pickle file does not exist.")
+        logging.write('error', "The filtered pickle file does not exist.")
         raise FileNotFoundError("The filtered pickle file does not exist.")
     except Exception as e:
-        my_logger.write('error', f"Failed to load filtered data: {e}")
+        logging.write('error', f"Failed to load filtered data: {e}")
         raise
 
 def drop_columns(df):
@@ -56,7 +88,7 @@ def drop_columns(df):
         df.drop(columns=['Unemployment rate - Percent of total labor force (Units)'], inplace=True)
         return df
     except Exception as e:
-        my_logger.write('error', f"Error in dropping columns: {e}")
+        logging.write('error', f"Error in dropping columns: {e}")
         raise
 
 def impute_missing_values(df):
@@ -78,7 +110,7 @@ def impute_missing_values(df):
         imputed_df = imputed_df.reset_index(drop=True)
         return imputed_df
     except Exception as e:
-        my_logger.write('error', f"Error in imputing missing values: {e}")
+        logging.write('error', f"Error in imputing missing values: {e}")
         raise
 
 def drop_specific_columns(df):
@@ -108,7 +140,7 @@ def drop_specific_columns(df):
         df.drop(columns=columns_to_drop, inplace=True)
         return df
     except Exception as e:
-        my_logger.write('error', f"Error in dropping specific columns: {e}")
+        logging.write('error', f"Error in dropping specific columns: {e}")
         raise
 
 def clean_data(df):
@@ -128,7 +160,7 @@ def clean_data(df):
         cleaned_df = cleaned_df.dropna()
         return cleaned_df
     except Exception as e:
-        my_logger.write('error', f"Error in cleaning data: {e}")
+        logging.write('error', f"Error in cleaning data: {e}")
         raise
 
 def scale_data(df):
@@ -147,7 +179,7 @@ def scale_data(df):
         scaled_df = pd.DataFrame(scaled_data, columns=df.columns)
         return scaled_df, RS
     except Exception as e:
-        my_logger.write('error', f"Error in scaling data: {e}")
+        logging.write('error', f"Error in scaling data: {e}")
         raise
 
 def run_pipeline(data):
@@ -181,9 +213,9 @@ def run_pipeline(data):
         X_train_lstm = X_train_pca.reshape((X_train_pca.shape[0], X_train_pca.shape[1], 1))
         X_test_lstm = X_test_pca.reshape((X_test_pca.shape[0], X_test_pca.shape[1], 1))
 
-        return X_train_lstm, X_test_lstm, y_train, y_test, scaler
+        return X_train_lstm, X_test_lstm, y_train, y_test, scaler, pca
     except Exception as e:
-        my_logger.write('error', f"Error in running pipeline: {e}")
+        logging.write('error', f"Error in running pipeline: {e}")
         raise
 
 def train_model(X_train_lstm, y_train):
@@ -205,7 +237,7 @@ def train_model(X_train_lstm, y_train):
         model.fit(X_train_lstm, y_train, validation_split=0.2, epochs=100, batch_size=32, verbose=1)
         return model
     except Exception as e:
-        my_logger.write('error', f"Error in training model: {e}")
+        # logging.write('error', f"Error in training model: {e}")
         raise
 
 def predict(model, X_test_lstm):
@@ -229,10 +261,10 @@ def predict(model, X_test_lstm):
 
         return y_pred, end_time - start_time, max_mem_usage
     except Exception as e:
-        my_logger.write('error', f"Error in prediction: {e}")
+        logging.write('error', f"Error in prediction: {e}")
         raise
 
-def save_model_and_scaler(model, scaler, model_path, scaler_path):
+def save_model_and_scaler(model, pca, scaler, model_path, scaler_path, pca_path):
     """
     Save the trained model and scaler.
 
@@ -243,32 +275,60 @@ def save_model_and_scaler(model, scaler, model_path, scaler_path):
     scaler_path (str): Path to save the scaler.
     """
     try:
-        model.save(model_path)
-        with open(scaler_path, "wb") as f:
-            joblib.dump(scaler, f)
+        # Save model to a local temporary file
+        local_model_file_path = "model.h5"
+        joblib.dump(model, local_model_file_path)
+
+        # Save scaler to a local temporary file
+        local_scaler_file_path = "scaler.pkl"
+        joblib.dump(scaler, local_scaler_file_path)
+
+        # Save PCA to a local temporary file
+        local_pca_file_path = "pca.pkl"
+        joblib.dump(pca, local_pca_file_path)
+
+        with fs.open(os.path.join(MODEL_DIR, model_path), 'wb') as f:
+            with open(local_model_file_path, 'rb') as local_f:
+                f.write(local_f.read())
+        
+        with fs.open(os.path.join(MODEL_DIR, scaler_path), 'wb') as f:
+            with open(local_scaler_file_path, 'rb') as local_f:
+                f.write(local_f.read())
+
+        with fs.open(os.path.join(MODEL_DIR, pca_path), 'wb') as f:
+            with open(local_pca_file_path, 'rb') as local_f:
+                f.write(local_f.read())
+
+        logging.info(f"Model, scaler, and PCA successfully uploaded to {MODEL_DIR}")
     except Exception as e:
-        my_logger.write('error', f"Error in saving model and scaler: {e}")
+        logging.error(f"Error uploading model, scaler, and PCA: {e}")
         raise
+    finally:
+        # Clean up the temporary files
+        for file_path in [local_model_file_path, local_scaler_file_path, local_pca_file_path]:
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
 if __name__ == "__main__":
     try:
         
         # Define the path to the filtered pickle file
-        filtered_pickle_path = os.path.join(PROJECT_DIR, 'data', 'processed_data', 'filtered_data.pkl')
+        filtered_pickle_path = f'gs://{bucket_name}/data/processed_data/filtered_data.pkl'
         
         df = load_filtered_data(filtered_pickle_path)
         clean_df = clean_data(df)
 
-        X_train_lstm, X_test_lstm, y_train, y_test, scaler = run_pipeline(clean_df)
+        X_train_lstm, X_test_lstm, y_train, y_test, scaler, pca = run_pipeline(clean_df)
         model = train_model(X_train_lstm, y_train)
         y_pred, inference_time, max_mem_usage = predict(model, X_test_lstm)
 
-        model_path = os.path.join(PROJECT_DIR, 'models', 'lstm_model.h5')
-        scaler_path = os.path.join(PROJECT_DIR, 'models', 'scaler.pkl')
-        save_model_and_scaler(model, scaler, model_path, scaler_path)
+        model_path = 'lstm_model.h5'
+        scaler_path = 'scaler.pkl'
+        pca_path = 'pca.pkl'
+        save_model_and_scaler(model, pca, scaler, model_path, scaler_path, pca_path)
 
         print(f'Inference Time: {inference_time}')
         print(f'Max Memory Usage: {max_mem_usage}')
     except Exception as e:
-        my_logger.write('error', f"Error in main execution: {e}")
+        logging.write('error', f"Error in main execution: {e}")
         raise
