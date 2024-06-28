@@ -8,7 +8,7 @@ COPY serve/predict.py serve/streamlit.py /app/
 
 # Install Flask and google-cloud-storage
 RUN pip install Flask google-cloud-storage scikit-learn grpcio gcsfs  \
-    python-dotenv streamlit
+    python-dotenv streamlit keras
 
 ENV AIP_STORAGE_URI=gs://us-east1-composer-airflow-7e8e089d-bucket/model
 ENV AIP_HEALTH_ROUTE=/ping
